@@ -47,6 +47,7 @@ class Status:
         self.platforms = []
         self.collections = []
         self.roms = []
+        self.firmware = []
         self.roms_to_show = []
         self.filters = itertools.cycle([Filter.ALL, Filter.LOCAL, Filter.REMOTE])
         self.current_filter = next(self.filters)
@@ -54,12 +55,14 @@ class Status:
         self.platforms_ready = threading.Event()
         self.collections_ready = threading.Event()
         self.roms_ready = threading.Event()
+        self.firmware_ready = threading.Event()
         self.download_rom_ready = threading.Event()
         self.abort_download = threading.Event()
         self.me_ready = threading.Event()
 
         # Initialize events what won't launch at startup
         self.roms_ready.set()
+        self.firmware_ready.set()
         self.download_rom_ready.set()
         self.abort_download.set()
 

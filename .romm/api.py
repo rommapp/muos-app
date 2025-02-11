@@ -28,9 +28,15 @@ Rom = namedtuple(
         "file_size_bytes",
     ],
 )
+Firmware = namedtuple("Firmware", ["id", "file_name", "is_verified", "file_extension", "file_size", "file_size_bytes"])
 Collection = namedtuple("Collection", ["id", "name", "rom_count"])
 Platform = namedtuple("Platform", ["id", "display_name", "slug", "rom_count"])
 
+#     full_path: str
+#     is_verified: bool
+#     crc_hash: str
+#     md5_hash: str
+#     sha1_hash: str
 
 class API:
 
@@ -40,6 +46,7 @@ class API:
         self.__platform_icon_url = "assets/platforms"
         self.__collections_endpoint = "api/collections"
         self.__roms_endpoint = "api/roms"
+        self.__firmware_endpoint = "api/firmware"
         self.__user_me_endpoint = "api/users/me"
         self.__user_profile_picture_url = "assets/romm/assets"
         self.username = os.getenv("USERNAME", "")
@@ -293,6 +300,118 @@ class API:
         self.__status.valid_host = True
         self.__status.valid_credentials = True
         self.__status.collections_ready.set()
+
+    def fetch_firmware(self):
+        if not self.__status.selected_platform:
+            return
+
+        try:
+            request  = Request(
+                f"{self.host}/{self.__firmware_endpoint}?platform_id={self.__status.selected_platform.id}",
+                headers=self.__headers
+            )
+        except ValueError:
+            self.__status.firmware = []
+            self.__status.valid_host = False
+            self.__status.valid_credentials = False
+            return
+
+        try:
+            if request.type not in ("http", "https"):
+                self.__status.firmware = []
+                self.__status.valid_host = False
+                self.__status.valid_credentials = False
+                return
+            response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
+        except HTTPError as e:
+            if e.code == 403:
+                self.__status.firmware = []
+                self.__status.valid_host = True
+                self.__status.valid_credentials = False
+                return
+            else:
+                raise
+        except URLError:
+            self.__status.firmware = []
+            self.__status.valid_host = False
+            self.__status.valid_credentials = False
+            return
+
+        firmware = json.loads(response.read().decode("utf-8"))
+        __firmware = [
+            Firmware(
+                id=f["id"],
+                file_name=f["file_name"],
+                is_verified=f["is_verified"],
+                file_extension=f["file_extension"],
+                file_size=self._human_readable_size(f["file_size_bytes"]),
+                file_size_bytes=f["file_size_bytes"],
+            )
+            for f in firmware
+        ]
+        __firmware.sort(key=lambda f: f.file_name)
+        self.__status.firmware = __firmware
+        self.__status.valid_host = True
+        self.__status.valid_credentials = True
+        self.__status.firmware_ready.set()
+
+    def download_firmware(self):
+        self.__status.download_queue.sort(key=lambda rom: rom.name)
+        for i, rom in enumerate(self.__status.download_queue):
+            self.__status.downloading_rom = rom
+            self.__status.downloading_rom_position = i + 1
+            dest_path = os.path.join(
+                self.__fs.get_sd_storage_platform_path(rom.platform_slug),
+                rom.file_name,
+            )
+            url = f"{self.host}/{self.__roms_endpoint}/{rom.id}/content/{quote(rom.file_name)}"
+            makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+            try:
+                request = Request(url, headers=self.__headers)
+            except ValueError:
+                self._reset_download_status()
+                return
+            try:
+                if request.type not in ("http", "https"):
+                    self._reset_download_status()
+                    return
+                with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
+                    dest_path, "wb"
+                ) as out_file:
+                    self.__status.total_downloaded_bytes = 0
+                    chunk_size = 1024
+                    print(
+                        f"Can Downloading: {not self.__status.abort_download.is_set()}"
+                    )
+                    while True:
+                        if not self.__status.abort_download.is_set():
+                            chunk = response.read(chunk_size)
+                            if not chunk:
+                                break
+                            out_file.write(chunk)
+                            self.__status.valid_host = True
+                            self.__status.valid_credentials = True
+                            self.__status.total_downloaded_bytes += len(chunk)
+                            self.__status.downloaded_percent = (
+                                self.__status.total_downloaded_bytes
+                                / self.__status.downloading_rom.file_size_bytes
+                            ) * 100
+                        else:
+                            self._reset_download_status(True, True)
+                            os.remove(dest_path)
+                            return
+            except HTTPError as e:
+                if e.code == 403:
+                    self._reset_download_status(valid_host=True)
+                    return
+                else:
+                    raise
+            except URLError:
+                self._reset_download_status(valid_host=True)
+                return
+        # End of download
+        self._reset_download_status(valid_host=True, valid_credentials=True)
 
     def fetch_roms(self):
         if self.__status.selected_platform:
