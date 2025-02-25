@@ -201,6 +201,8 @@ class API:
             self._status.valid_credentials = False
             return
         platforms = json.loads(response.read().decode("utf-8"))
+        if isinstance(platforms, dict):
+            platforms = platforms["items"]
         _platforms: list[Platform] = []
         for platform in platforms:
             if platform["rom_count"] > 0:
@@ -258,6 +260,8 @@ class API:
             self._status.valid_credentials = False
             return
         collections = json.loads(response.read().decode("utf-8"))
+        if isinstance(collections, dict):
+            collections = collections["items"]
         _collections: list[Collection] = []
         for collection in collections:
             if collection["rom_count"] > 0:
@@ -321,6 +325,8 @@ class API:
             self._status.valid_credentials = False
             return
         roms = json.loads(response.read().decode("utf-8"))
+        if isinstance(roms, dict):
+            roms = roms["items"]
         _roms = [
             Rom(
                 id=rom["id"],
