@@ -11,23 +11,17 @@ LOG_DIR="${ROOT_DIR}/logs"
 
 mkdir -p "${LOG_DIR}"
 
-# Check if pip is installed
-if ! command -v pip3 &>/dev/null; then
-	python3 -m ensurepip --default-pip
-fi
+# Ensure pip is installed
+command -v pip3 >/dev/null || python3 -m ensurepip --default-pip
 
-# Check if pillow is installed
-if ! python3 -c "import PIL" &>/dev/null; then
-	pip3 install pillow
-fi
-
-# Check if dotenv is installed
-if ! python3 -c "import dotenv" &>/dev/null; then
-	pip3 install python-dotenv
-fi
+# Install dependencies if missing
+python3 -c "import PIL" 2>/dev/null || pip3 install --no-cache-dir pillow
+python3 -c "import dotenv" 2>/dev/null || pip3 install --no-cache-dir python-dotenv
 
 cd "${ROOT_DIR}" || exit
 
 ENTRYPOINT="python3 romm.py"
+LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 
-${ENTRYPOINT} >"${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log" 2>&1
+# Use muxstart to launch the app, ensuring it runs in its own session
+muxstart -n romm -d "${ROOT_DIR}" -s "${ENTRYPOINT}" >"${LOG_FILE}" 2>&1

@@ -27,7 +27,7 @@ lint:
     - markdownlint@0.44.0
     - osv-scanner@1.9.2
     - oxipng@9.1.4
-    - prettier@3.5.1
+    - prettier@3.5.2
     - ruff@0.9.7
     - shellcheck@0.10.0
     - shfmt@3.6.0
