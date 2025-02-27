@@ -2,6 +2,7 @@ import base64
 import json
 import math
 import os
+import re
 import zipfile
 from typing import Tuple
 from urllib.error import HTTPError, URLError
@@ -50,6 +51,10 @@ class API:
         p = math.pow(1024, i)
         s = round(size_bytes / p, 2)
         return (s, size_name[i])
+
+    def _sanitize_filename(self, filename: str) -> str:
+        invalid_chars = r"[\/\\\*\?\"|\<\>:\t\n\r\b]"
+        return re.sub(invalid_chars, "_", filename)
 
     def _fetch_user_profile_picture(self, avatar_path: str) -> None:
         fs_extension = avatar_path.split(".")[-1]
@@ -372,7 +377,7 @@ class API:
             self._status.downloading_rom_position = i + 1
             dest_path = os.path.join(
                 self._file_system.get_sd_storage_platform_path(rom.platform_slug),
-                rom.fs_name,
+                self._sanitize_filename(rom.fs_name),
             )
             url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=True"
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
@@ -423,7 +428,8 @@ class API:
                         for file in zip_ref.infolist():
                             if not self._status.abort_download.is_set():
                                 file_path = os.path.join(
-                                    os.path.dirname(dest_path), file.filename
+                                    os.path.dirname(dest_path),
+                                    self._sanitize_filename(file.filename),
                                 )
                                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
                                 with zip_ref.open(file) as source, open(
