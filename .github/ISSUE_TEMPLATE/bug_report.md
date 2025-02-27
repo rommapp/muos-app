@@ -29,6 +29,7 @@ If applicable, add screenshots to help explain your problem.
 
 - muOS version: [e.g. BANANA]
 - device: [e.g. Anbernic rg40xxv]
+- RomM version: [e. g. 3.7.3]
 
 **Additional context**
 Add any other context about the problem here.
