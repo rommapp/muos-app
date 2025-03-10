@@ -5,13 +5,13 @@ import time
 from typing import Any, Tuple
 
 import ui
-from ui import colorYellow
 from __version__ import version
 from api import API
 from filesystem import Filesystem
 from glyps import glyphs
 from input import Input
 from status import Filter, StartMenuOptions, Status, View
+from ui import colorYellow
 
 
 class RomM:

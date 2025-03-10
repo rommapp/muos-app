@@ -31,16 +31,17 @@ class API:
         self.host = os.getenv("HOST", "")
         self.username = os.getenv("USERNAME", "")
         self.password = os.getenv("PASSWORD", "")
-        self._credentials = f"{self.username}:{self.password}"
-        self._auth_token = base64.b64encode(self._credentials.encode("utf-8")).decode(
-            "utf-8"
-        )
-        self._headers = {"Authorization": f"Basic {self._auth_token}"}
+        self.headers = {}
         self._exclude_platforms = set(os.getenv("EXCLUDE_PLATFORMS") or [])
         self._include_collections = set(os.getenv("INCLUDE_COLLECTIONS") or [])
         self._exclude_collections = set(os.getenv("EXCLUDE_COLLECTIONS") or [])
         self._status = Status()
         self._file_system = Filesystem()
+
+        if self.username and self.password:
+            credentials = f"{self.username}:{self.password}"
+            auth_token = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
+            self.headers = {"Authorization": f"Basic {auth_token}"}
 
     @staticmethod
     def _human_readable_size(size_bytes: int) -> Tuple[float, str]:
@@ -61,7 +62,7 @@ class API:
         try:
             request = Request(
                 f"{self.host}/{self._user_profile_picture_url}/{avatar_path}",
-                headers=self._headers,
+                headers=self.headers,
             )
         except ValueError as e:
             print(e)
@@ -103,7 +104,7 @@ class API:
     def fetch_me(self) -> None:
         try:
             request = Request(
-                f"{self.host}/{self._user_me_endpoint}", headers=self._headers
+                f"{self.host}/{self._user_me_endpoint}", headers=self.headers
             )
         except ValueError as e:
             print(e)
@@ -139,7 +140,7 @@ class API:
         try:
             request = Request(
                 f"{self.host}/{self._platform_icon_url}/{platform_slug}.ico",
-                headers=self._headers,
+                headers=self.headers,
             )
         except ValueError as e:
             print(e)
@@ -178,7 +179,7 @@ class API:
     def fetch_platforms(self) -> None:
         try:
             request = Request(
-                f"{self.host}/{self._platforms_endpoint}", headers=self._headers
+                f"{self.host}/{self._platforms_endpoint}", headers=self.headers
             )
         except ValueError:
             self._status.platforms = []
@@ -237,7 +238,7 @@ class API:
     def fetch_collections(self) -> None:
         try:
             request = Request(
-                f"{self.host}/{self._collections_endpoint}", headers=self._headers
+                f"{self.host}/{self._collections_endpoint}", headers=self.headers
             )
         except ValueError:
             self._status.collections = []
@@ -302,7 +303,7 @@ class API:
         try:
             request = Request(
                 f"{self.host}/{self._roms_endpoint}?{view}_id={id}&order_by=name&order_dir=asc",
-                headers=self._headers,
+                headers=self.headers,
             )
         except ValueError:
             self._status.roms = []
@@ -384,7 +385,7 @@ class API:
 
             try:
                 print(f"Fetching: {url}")
-                request = Request(url, headers=self._headers)
+                request = Request(url, headers=self.headers)
             except ValueError:
                 self._reset_download_status()
                 return
@@ -393,9 +394,9 @@ class API:
                     self._reset_download_status()
                     return
                 print(f"Downloading {rom.name} to {dest_path}")
-                with urlopen(request) as response, open(
+                with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
                     dest_path, "wb"
-                ) as out_file:  # trunk-ignore(bandit/B310)
+                ) as out_file:
                     self._status.total_downloaded_bytes = 0
                     chunk_size = 1024
                     while True:
