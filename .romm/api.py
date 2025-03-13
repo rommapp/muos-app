@@ -23,6 +23,7 @@ class API:
     _platforms_endpoint = "api/platforms"
     _platform_icon_url = "assets/platforms"
     _collections_endpoint = "api/collections"
+    _virtual_collections_endpoint = "api/collections/virtual"
     _roms_endpoint = "api/roms"
     _user_me_endpoint = "api/users/me"
     _user_profile_picture_url = "assets/romm/assets"
@@ -237,21 +238,32 @@ class API:
 
     def fetch_collections(self) -> None:
         try:
-            request = Request(
+            collections_request = Request(
                 f"{self.host}/{self._collections_endpoint}", headers=self.headers
+            )
+            v_collections_request = Request(
+                f"{self.host}/{self._virtual_collections_endpoint}?type=collection",
+                headers=self.headers,
             )
         except ValueError:
             self._status.collections = []
             self._status.valid_host = False
             self._status.valid_credentials = False
             return
+
         try:
-            if request.type not in ("http", "https"):
+            if collections_request.type not in ("http", "https"):
                 self._status.collections = []
                 self._status.valid_host = False
                 self._status.valid_credentials = False
                 return
-            response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
+
+            collections_response = urlopen(  # trunk-ignore(bandit/B310)
+                collections_request, timeout=60
+            )
+            v_collections_response = urlopen(  # trunk-ignore(bandit/B310)
+                v_collections_request, timeout=60
+            )
         except HTTPError as e:
             if e.code == 403:
                 self._status.collections = []
@@ -265,10 +277,17 @@ class API:
             self._status.valid_host = False
             self._status.valid_credentials = False
             return
-        collections = json.loads(response.read().decode("utf-8"))
+
+        collections = json.loads(collections_response.read().decode("utf-8"))
+        v_collections = json.loads(v_collections_response.read().decode("utf-8"))
+
         if isinstance(collections, dict):
             collections = collections["items"]
+        if isinstance(v_collections, dict):
+            v_collections = v_collections["items"]
+
         _collections: list[Collection] = []
+
         for collection in collections:
             if collection["rom_count"] > 0:
                 if self._include_collections:
@@ -282,9 +301,29 @@ class API:
                         id=collection["id"],
                         name=collection["name"],
                         rom_count=collection["rom_count"],
+                        virtual=False,
                     )
                 )
+
+        for v_collection in v_collections:
+            if v_collection["rom_count"] > 0:
+                if self._include_collections:
+                    if v_collection["name"] not in self._include_collections:
+                        continue
+                elif self._exclude_collections:
+                    if v_collection["name"] in self._exclude_collections:
+                        continue
+                _collections.append(
+                    Collection(
+                        id=v_collection["id"],
+                        name=v_collection["name"],
+                        rom_count=v_collection["rom_count"],
+                        virtual=True,
+                    )
+                )
+
         _collections.sort(key=lambda collection: collection.name)
+
         self._status.collections = _collections
         self._status.valid_host = True
         self._status.valid_credentials = True
@@ -297,6 +336,9 @@ class API:
         elif self._status.selected_collection:
             view = View.COLLECTIONS
             id = self._status.selected_collection.id
+        elif self._status.selected_virtual_collection:
+            view = View.VIRTUAL_COLLECTIONS
+            id = self._status.selected_virtual_collection.id
         else:
             return
 

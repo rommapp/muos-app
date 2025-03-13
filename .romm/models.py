@@ -17,5 +17,5 @@ Rom = namedtuple(
         "tags",
     ],
 )
-Collection = namedtuple("Collection", ["id", "name", "rom_count"])
+Collection = namedtuple("Collection", ["id", "name", "rom_count", "virtual"])
 Platform = namedtuple("Platform", ["id", "display_name", "slug", "rom_count"])

@@ -9,6 +9,7 @@ from models import Collection, Platform, Rom
 class View:
     PLATFORMS = "platform"
     COLLECTIONS = "collection"
+    VIRTUAL_COLLECTIONS = "virtual_collection"
     ROMS = "roms"
 
 
@@ -42,6 +43,7 @@ class Status:
         self.current_view: str = View.PLATFORMS
         self.selected_platform: Optional[Platform] = None
         self.selected_collection: Optional[Collection] = None
+        self.selected_virtual_collection: Optional[Collection] = None
 
         self.show_start_menu = False
         self.show_contextual_menu = False

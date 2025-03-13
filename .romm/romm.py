@@ -189,9 +189,15 @@ class RomM:
             if self.status.roms_ready.is_set() and len(self.status.collections) > 0:
                 self.status.roms_ready.clear()
                 self.status.roms = []
-                self.status.selected_collection = self.status.collections[
+
+                selected_collection = self.status.collections[
                     self.collections_selected_position
                 ]
+                if selected_collection.virtual:
+                    self.status.selected_virtual_collection = selected_collection
+                else:
+                    self.status.selected_collection = selected_collection
+
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
             self.input.reset_input()
@@ -230,7 +236,7 @@ class RomM:
             ].display_name
             header_color = ui.colorViolet
             prepend_platform_slug = False
-        elif self.status.selected_collection:
+        elif self.status.selected_collection or self.status.selected_virtual_collection:
             header_text = self.status.collections[
                 self.collections_selected_position
             ].name
@@ -324,10 +330,14 @@ class RomM:
             elif self.status.selected_collection:
                 self.status.current_view = View.COLLECTIONS
                 self.status.selected_collection = None
+            elif self.status.selected_virtual_collection:
+                self.status.current_view = View.COLLECTIONS
+                self.status.selected_virtual_collection = None
             else:
                 self.status.current_view = View.PLATFORMS
                 self.status.selected_platform = None
                 self.status.selected_collection = None
+                self.status.selected_virtual_collection = None
             self.status.reset_roms_list()
             self.roms_selected_position = 0
             self.status.multi_selected_roms = []
