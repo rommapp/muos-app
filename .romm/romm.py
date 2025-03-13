@@ -92,6 +92,21 @@ class RomM:
                 color=ui.colorBlue,
             )
 
+    def _download_all_games(self):
+        self.status.selected_platform = self.status.platforms[
+            self.platforms_selected_position
+        ]
+        threading.Thread(target=self.api.fetch_roms).start()
+        self.status.download_queue.extend(
+            [
+                r
+                for r in self.status.roms
+                if r.platform_slug
+                == self.status.platforms[self.platforms_selected_position].slug
+            ]
+        )
+        self.input.reset_input()
+
     def _update_platforms_view(self):
         if self.input.key("A"):
             if self.status.roms_ready.is_set() and len(self.status.platforms) > 0:
@@ -121,6 +136,11 @@ class RomM:
                         lambda: ui.draw_log(
                             text_line_1=f"Platform name: {self.status.platforms[self.platforms_selected_position].display_name}"
                         ),
+                    ),
+                    (
+                        f"{glyphs.download} Download all games",
+                        1,
+                        lambda: self._download_all_games(),
                     ),
                 ]
             self.input.reset_input()
@@ -271,7 +291,7 @@ class RomM:
             if current_time - self.last_spinner_update >= self.spinner_speed:
                 self.last_spinner_update = current_time
                 self.current_spinner_status = next(glyphs.spinner)
-            ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching roms")
+            ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching games")
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
                 ui.draw_loader(self.status.extracted_percent, color=colorYellow)
@@ -372,10 +392,10 @@ class RomM:
                 selected_rom = self.status.roms_to_show[self.roms_selected_position]
                 self.contextual_menu_options = [
                     (
-                        f"{glyphs.about} Rom info",
+                        f"{glyphs.about} Game info",
                         0,
                         lambda: ui.draw_log(
-                            text_line_1=f"Rom name: {selected_rom.name}"
+                            text_line_1=f"Game name: {selected_rom.name}"
                         ),
                     ),
                 ]
