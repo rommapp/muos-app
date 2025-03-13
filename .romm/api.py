@@ -422,7 +422,7 @@ class API:
                 self._file_system.get_sd_storage_platform_path(rom.platform_slug),
                 self._sanitize_filename(rom.fs_name),
             )
-            url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=True"
+            url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
             os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
             try:
