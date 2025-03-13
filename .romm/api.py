@@ -148,6 +148,7 @@ class API:
             self._status.valid_host = False
             self._status.valid_credentials = False
             return
+
         try:
             if request.type not in ("http", "https"):
                 self._status.valid_host = False
@@ -160,6 +161,11 @@ class API:
                 self._status.valid_host = True
                 self._status.valid_credentials = False
                 return
+            # Icon is missing on the server
+            elif e.code == 404:
+                self._status.valid_host = True
+                self._status.valid_credentials = True
+                return
             else:
                 raise
         except URLError as e:
@@ -167,10 +173,13 @@ class API:
             self._status.valid_host = False
             self._status.valid_credentials = False
             return
+
         if not os.path.exists(self._file_system.resources_path):
             os.makedirs(self._file_system.resources_path)
+
         with open(f"{self._file_system.resources_path}/{platform_slug}.ico", "wb") as f:
             f.write(response.read())
+
         icon = Image.open(f"{self._file_system.resources_path}/{platform_slug}.ico")
         icon = icon.resize((30, 30))
         icon.save(f"{self._file_system.resources_path}/{platform_slug}.ico")
