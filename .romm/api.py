@@ -214,7 +214,7 @@ class API:
         for platform in platforms:
             if platform["rom_count"] > 0:
                 if (
-                    platform["slug"] not in MUOS_SUPPORTED_PLATFORMS
+                    platform["slug"].lower() not in MUOS_SUPPORTED_PLATFORMS
                     or platform["slug"] in self._exclude_platforms
                 ):
                     continue
