@@ -2,7 +2,7 @@
 # HELP: RomM muOS client to download games wirelessly from your server
 # ICON: romm
 
-. /opt/muos/script/var/func.sh
+. /opt/muos/script/var/func.sh # trunk-ignore(shellcheck/SC1091)
 
 echo app >/tmp/act_go
 
