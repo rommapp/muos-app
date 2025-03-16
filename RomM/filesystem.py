@@ -8,7 +8,7 @@ class Filesystem:
     _instance: Optional["Filesystem"] = None
     _sd1_rom_storage_path = "/mnt/mmc/roms"
     _sd2_rom_storage_path = "/mnt/sdcard/roms"
-    resources_path = "/mnt/mmc/MUOS/application/.romm/resources"
+    resources_path = "/mnt/mmc/MUOS/application/RomM/resources"
 
     def __new__(cls):
         if not cls._instance:
