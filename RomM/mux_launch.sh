@@ -1,5 +1,5 @@
 #!/bin/bash
-# HELP: RomM muOS client to download roms directly from your RomM server
+# HELP: RomM muOS client to download games wirelessly from your server
 # ICON: romm
 
 . /opt/muos/script/var/func.sh

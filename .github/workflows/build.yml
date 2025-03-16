@@ -20,14 +20,19 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_ENV
           sed -i "s/<version>/$VERSION/" RomM/__version__.py
 
-      - name: Run build script
+      - name: Install just
         run: |
-          chmod +x scripts/build.sh
-          ./scripts/build.sh
+          apt-get update
+          apt-get install -y just
+
+      - name: Run justfile
+        run: |
+          just clean
+          just build
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: .dist/romm_muOS_install_${{ env.version }}.zip
+          files: .dist/RomM\ Installer\ ${{ env.version }}.muxapp
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
