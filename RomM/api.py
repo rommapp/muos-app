@@ -1,5 +1,4 @@
 import base64
-import datetime
 import json
 import math
 import os
@@ -383,16 +382,13 @@ class API:
             self._status.valid_host = False
             self._status.valid_credentials = False
             return
-
         roms = json.loads(response.read().decode("utf-8"))
         if isinstance(roms, dict):
             roms = roms["items"]
-
         _roms = [
             Rom(
                 id=rom["id"],
                 name=rom["name"],
-                summary=rom["summary"],
                 fs_name=rom["fs_name"],
                 platform_slug=rom["platform_slug"],
                 fs_extension=rom["fs_extension"],
@@ -403,18 +399,10 @@ class API:
                 regions=rom["regions"],
                 revision=rom["revision"],
                 tags=rom["tags"],
-                path_cover_small=rom["path_cover_small"].split("?")[0],
-                first_release_date=rom["first_release_date"],
-                average_rating=rom["average_rating"],
-                genres=rom["genres"],
-                franchises=rom["franchises"],
-                companies=rom["companies"],
-                age_ratings=rom["age_ratings"],
             )
             for rom in roms
             if rom["platform_slug"] in MUOS_SUPPORTED_PLATFORMS
         ]
-
         _roms.sort(key=lambda rom: rom.name)
         self._status.roms = _roms
         self._status.valid_host = True
@@ -453,7 +441,6 @@ class API:
             except ValueError:
                 self._reset_download_status()
                 return
-
             try:
                 if request.type not in ("http", "https"):
                     self._reset_download_status()
@@ -484,7 +471,6 @@ class API:
                             self._reset_download_status(True, True)
                             os.remove(dest_path)
                             return
-
                 if rom.multi:
                     self._status.extracting_rom = True
                     print("Multi file rom detected. Extracting...")
@@ -515,72 +501,13 @@ class API:
                                 self._reset_download_status(True, True)
                                 os.remove(dest_path)
                                 return
-
                     self._status.extracting_rom = False
                     self._status.downloading_rom = None
                     os.remove(dest_path)
                     print(f"Extracted {rom.name} at {os.path.dirname(dest_path)}")
-
-                if rom.summary:
-                    filename = self._sanitize_filename(rom.fs_name).split(".")[0]
-                    text_path = os.path.join(
-                        self._file_system.get_sd_catalog_platform_path(
-                            rom.platform_slug
-                        ),
-                        "text",
-                        f"{filename}.txt",
-                    )
-                    os.makedirs(os.path.dirname(text_path), exist_ok=True)
-                    with open(text_path, "w") as f:
-                        f.write(rom.summary)
-                        f.write("\n\n")
-
-                        if rom.first_release_date:
-                            dt = datetime.datetime.fromtimestamp(
-                                rom.first_release_date / 1000
-                            )
-                            formatted_date = dt.strftime("%Y-%m-%d")
-                            f.write(f"First release date: {formatted_date}\n")
-
-                        if rom.average_rating:
-                            f.write(f"Average rating: {rom.average_rating}\n")
-
-                        if rom.genres:
-                            f.write(f"Genres: {', '.join(rom.genres)}\n")
-
-                        if rom.franchises:
-                            f.write(f"Franchises: {', '.join(rom.franchises)}\n")
-
-                        if rom.companies:
-                            f.write(f"Companies: {', '.join(rom.companies)}\n")
-
-                if rom.path_cover_small:
-                    print(f"Downloading cover for {rom.name}")
-                    extension = rom.path_cover_small.split(".")[-1]
-                    filename = self._sanitize_filename(rom.fs_name).split(".")[0]
-                    cover_path = os.path.join(
-                        self._file_system.get_sd_catalog_platform_path(
-                            rom.platform_slug
-                        ),
-                        "box",
-                        f"{filename}.{extension}",
-                    )
-                    os.makedirs(os.path.dirname(cover_path), exist_ok=True)
-                    request = Request(
-                        f"{self.host}{rom.path_cover_small}",
-                        headers=self.headers,
-                    )
-                    with urlopen(  # trunk-ignore(bandit/B310)
-                        request
-                    ) as response, open(cover_path, "wb") as out_file:
-                        out_file.write(response.read())
-                    print(f"Downloaded cover for {rom.name} at {cover_path}")
             except HTTPError as e:
                 if e.code == 403:
                     self._reset_download_status(valid_host=True)
-                    return
-                if e.code == 404:
-                    self._reset_download_status(valid_host=True, valid_credentials=True)
                     return
                 else:
                     raise
