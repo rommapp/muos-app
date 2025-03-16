@@ -18,7 +18,7 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_ENV
-          sed -i "s/<version>/$VERSION/" .romm/__version__.py
+          sed -i "s/<version>/$VERSION/" RomM/__version__.py
 
       - name: Run build script
         run: |
