@@ -13,12 +13,12 @@ clean:
 
 base_name := "RomM Installer"
 version := `
-	VERSION=$(grep -o '"[^"]*"' RomM/__version__.py | tr -d '"')
+	bash -c 'VERSION=$(grep -o "\"[^\"]*\"" RomM/__version__.py | tr -d "\"")
 	if [[ ${VERSION} == "<version>" ]]; then
 		VERSION=$(git rev-parse --abbrev-ref HEAD)
 	fi
 	VERSION=${VERSION//\//_}
-	echo ${VERSION}
+	echo ${VERSION}'
 `
 
 build:
@@ -28,7 +28,10 @@ build:
 	mkdir -p .dist
 
 	rsync -a --exclude={__pycache__,.venv,.env,.DS_Store,.build,.dist} RomM/ .build/RomM/
-	sed -i '' "s/<version>/{{ version }}/" .build/RomM/__version__.py
+	
+	# Platform-independent approach
+	sed "s/<version>/{{ version }}/" .build/RomM/__version__.py > .build/RomM/__version__.py.new
+	mv .build/RomM/__version__.py.new .build/RomM/__version__.py
 
 	(cd .build && zip -r "../{{ base_name }} {{ version }}.muxapp" ./*)
 
