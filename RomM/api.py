@@ -36,6 +36,7 @@ class API:
         self._exclude_platforms = set(os.getenv("EXCLUDE_PLATFORMS") or [])
         self._include_collections = set(os.getenv("INCLUDE_COLLECTIONS") or [])
         self._exclude_collections = set(os.getenv("EXCLUDE_COLLECTIONS") or [])
+        self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
         self._status = Status()
         self._file_system = Filesystem()
 
@@ -251,7 +252,7 @@ class API:
                 f"{self.host}/{self._collections_endpoint}", headers=self.headers
             )
             v_collections_request = Request(
-                f"{self.host}/{self._virtual_collections_endpoint}?type=collection",
+                f"{self.host}/{self._virtual_collections_endpoint}?type={self._collection_type}",
                 headers=self.headers,
             )
         except ValueError:

@@ -1,12 +1,12 @@
 #!/bin/bash
-# HELP: RomM muOS client to download roms directly from your RomM server
+# HELP: RomM muOS client to download games wirelessly from your server
 # ICON: romm
 
-. /opt/muos/script/var/func.sh
+. /opt/muos/script/var/func.sh # trunk-ignore(shellcheck/SC1091)
 
 echo app >/tmp/act_go
 
-ROOT_DIR="$(GET_VAR "device" "storage/rom/mount")/MUOS/application/.romm"
+ROOT_DIR="$(GET_VAR "device" "storage/rom/mount")/MUOS/application/RomM"
 LOG_DIR="${ROOT_DIR}/logs"
 ICON_DIR=/opt/muos/default/MUOS/theme/active/glyph/muxapp/
 FONTS_DIR="/usr/share/fonts/romm"

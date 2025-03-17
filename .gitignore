@@ -1,6 +1,6 @@
 __pycache__/
 .venv
-.romm/.env
+.env
 .DS_Store
 .build
 .dist
