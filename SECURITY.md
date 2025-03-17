@@ -1,3 +1,5 @@
+<!-- trunk-ignore-all(markdownlint/MD041) -->
+
 Thanks for helping make the RomM ecosystem safer for everyone.
 
 ## Reporting Security Issues

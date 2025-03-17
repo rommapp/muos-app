@@ -37,6 +37,10 @@ lint:
     - shfmt@3.6.0
     - svgo@3.3.2
     - trufflehog@3.88.17
+  ignore:
+    - linters: [oxipng]
+      paths:
+        - RomM/resources/romm.png
 actions:
   disabled:
     - trunk-announce

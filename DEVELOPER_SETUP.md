@@ -1,3 +1,5 @@
+<!-- trunk-ignore-all(markdownlint/MD041) -->
+
 ## Installation
 
 ```bash
