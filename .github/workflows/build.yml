@@ -20,10 +20,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_ENV
           sed -i "s/<version>/$VERSION/" RomM/__version__.py
 
-      - name: Install just
-        run: |
-          apt-get update
-          apt-get install -y just
+      - name: Setup just
+        uses: extractions/setup-just@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run justfile
         run: |
