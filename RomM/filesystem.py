@@ -8,6 +8,8 @@ class Filesystem:
     _instance: Optional["Filesystem"] = None
     _sd1_rom_storage_path = "/mnt/mmc/roms"
     _sd2_rom_storage_path = "/mnt/sdcard/roms"
+    _sd1_catalog_path = "/mnt/mmc/MUOS/info/catalog"
+    _sd2_catalog_path = "/mnt/sdcard/MUOS/info/catalog"
     resources_path = "/mnt/mmc/MUOS/application/RomM/resources"
 
     def __new__(cls):
@@ -31,6 +33,12 @@ class Filesystem:
     def get_sd2_storage_path(self) -> str:
         return self._sd2_rom_storage_path
 
+    def get_sd1_catalog_path(self) -> str:
+        return self._sd1_catalog_path
+
+    def get_sd2_catalog_path(self) -> str:
+        return self._sd2_catalog_path
+
     def get_sd1_storage_platform_path(self, platform: str) -> str:
         return os.path.join(
             self._sd1_rom_storage_path,
@@ -39,6 +47,15 @@ class Filesystem:
 
     def get_sd2_storage_platform_path(self, platform: str) -> str:
         return os.path.join(self._sd2_rom_storage_path, platform)
+
+    def get_sd1_catalog_platform_path(self, platform: str) -> str:
+        return os.path.join(
+            self._sd1_catalog_path,
+            MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(platform, platform),
+        )
+
+    def get_sd2_catalog_platform_path(self, platform: str) -> str:
+        return os.path.join(self._sd2_catalog_path, platform)
 
     def set_sd_storage(self, sd: int) -> None:
         if sd == 1:
@@ -63,11 +80,23 @@ class Filesystem:
         else:
             return self.get_sd2_storage_path()
 
+    def get_sd_catalog_path(self) -> str:
+        if self._current_sd == 1:
+            return self.get_sd1_catalog_path()
+        else:
+            return self.get_sd2_catalog_path()
+
     def get_sd_storage_platform_path(self, platform: str) -> str:
         if self._current_sd == 1:
             return self.get_sd1_storage_platform_path(platform)
         else:
             return self.get_sd2_storage_platform_path(platform)
+
+    def get_sd_catalog_platform_path(self, platform: str) -> str:
+        if self._current_sd == 1:
+            return self.get_sd1_catalog_platform_path(platform)
+        else:
+            return self.get_sd2_catalog_platform_path(platform)
 
     def is_rom_in_device(self, rom: Rom) -> bool:
         return os.path.exists(
