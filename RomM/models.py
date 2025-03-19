@@ -16,7 +16,7 @@ Rom = namedtuple(
         "regions",
         "revision",
         "tags",
-        "path_cover_small",
+        "path_cover_large",
         "first_release_date",
         "average_rating",
         "genres",

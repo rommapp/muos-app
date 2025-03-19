@@ -15,6 +15,7 @@ from filesystem import MUOS_SUPPORTED_PLATFORMS, Filesystem
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
+from utils import has_alpha_channel
 
 # Load .env file from one folder above
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
@@ -403,7 +404,7 @@ class API:
                 regions=rom["regions"],
                 revision=rom["revision"],
                 tags=rom["tags"],
-                path_cover_small=rom["path_cover_small"].split("?")[0],
+                path_cover_large=rom["path_cover_large"].split("?")[0],
                 first_release_date=rom["first_release_date"],
                 average_rating=rom["average_rating"],
                 genres=rom["genres"],
@@ -522,7 +523,7 @@ class API:
                 if rom.summary:
                     filename = self._sanitize_filename(rom.fs_name).split(".")[0]
                     text_path = os.path.join(
-                        self._file_system.get_sd_catalog_platform_path(
+                        self._file_system.get_sd_catalogue_platform_path(
                             rom.platform_slug
                         ),
                         "text",
@@ -552,12 +553,12 @@ class API:
                         if rom.companies:
                             f.write(f"Companies: {', '.join(rom.companies)}\n")
 
-                if rom.path_cover_small:
+                if rom.path_cover_large:
                     print(f"Downloading cover for {rom.name}")
-                    extension = rom.path_cover_small.split(".")[-1]
+                    extension = rom.path_cover_large.split(".")[-1]
                     filename = self._sanitize_filename(rom.fs_name).split(".")[0]
                     cover_path = os.path.join(
-                        self._file_system.get_sd_catalog_platform_path(
+                        self._file_system.get_sd_catalogue_platform_path(
                             rom.platform_slug
                         ),
                         "box",
@@ -565,13 +566,19 @@ class API:
                     )
                     os.makedirs(os.path.dirname(cover_path), exist_ok=True)
                     request = Request(
-                        f"{self.host}{rom.path_cover_small}",
+                        f"{self.host}{rom.path_cover_large}",
                         headers=self.headers,
                     )
                     with urlopen(  # trunk-ignore(bandit/B310)
                         request
                     ) as response, open(cover_path, "wb") as out_file:
                         out_file.write(response.read())
+
+                    # Add alpha channel to the image
+                    img = Image.open(cover_path)
+                    if not has_alpha_channel(img):
+                        img_with_alpha = img.convert("RGBA")
+                        img_with_alpha.save(cover_path)
                     print(f"Downloaded cover for {rom.name} at {cover_path}")
             except HTTPError as e:
                 if e.code == 403:
