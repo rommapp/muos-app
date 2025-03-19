@@ -29,6 +29,6 @@ python3 -c "import dotenv" 2>/dev/null || pip3 install --no-cache-dir python-dot
 
 cd "${ROOT_DIR}" || exit
 
-LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d').log"
+LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 
 python3 romm.py >"${LOG_FILE}" 2>&1
