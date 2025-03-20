@@ -32,3 +32,10 @@ cd "${ROOT_DIR}" || exit
 LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 
 python3 romm.py >"${LOG_FILE}" 2>&1
+
+SCREEN_TYPE="internal"
+if [ "$(GET_VAR "global" "boot/device_mode")" -eq 1 ]; then
+	SCREEN_TYPE="external"
+fi
+
+FB_SWITCH "$(GET_VAR "device" "screen/$SCREEN_TYPE/width")" "$(GET_VAR "device" "screen/$SCREEN_TYPE/height")" 32
