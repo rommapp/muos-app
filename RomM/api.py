@@ -1,4 +1,5 @@
 import base64
+import datetime
 import json
 import math
 import os
@@ -14,6 +15,7 @@ from filesystem import MUOS_SUPPORTED_PLATFORMS, Filesystem
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
+from utils import add_alpha_channel, jpg_to_png
 
 # Load .env file from one folder above
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
@@ -27,6 +29,7 @@ class API:
     _roms_endpoint = "api/roms"
     _user_me_endpoint = "api/users/me"
     _user_profile_picture_url = "assets/romm/assets"
+    _assets_endpoint = "assets/romm/resources"
 
     def __init__(self):
         self.host = os.getenv("HOST", "")
@@ -387,14 +390,18 @@ class API:
             self._status.valid_host = False
             self._status.valid_credentials = False
             return
+
         roms = json.loads(response.read().decode("utf-8"))
         if isinstance(roms, dict):
             roms = roms["items"]
+
         _roms = [
             Rom(
                 id=rom["id"],
                 name=rom["name"],
+                summary=rom["summary"],
                 fs_name=rom["fs_name"],
+                platform_id=rom["platform_id"],
                 platform_slug=rom["platform_slug"],
                 fs_extension=rom["fs_extension"],
                 fs_size=self._human_readable_size(rom["fs_size_bytes"]),
@@ -404,10 +411,18 @@ class API:
                 regions=rom["regions"],
                 revision=rom["revision"],
                 tags=rom["tags"],
+                path_cover_large=rom["path_cover_large"].split("?")[0],
+                first_release_date=rom["first_release_date"],
+                average_rating=rom["average_rating"],
+                genres=rom["genres"],
+                franchises=rom["franchises"],
+                companies=rom["companies"],
+                age_ratings=rom["age_ratings"],
             )
             for rom in roms
             if rom["platform_slug"] in MUOS_SUPPORTED_PLATFORMS
         ]
+
         _roms.sort(key=lambda rom: rom.name)
         self._status.roms = _roms
         self._status.valid_host = True
@@ -446,6 +461,7 @@ class API:
             except ValueError:
                 self._reset_download_status()
                 return
+
             try:
                 if request.type not in ("http", "https"):
                     self._reset_download_status()
@@ -476,6 +492,7 @@ class API:
                             self._reset_download_status(True, True)
                             os.remove(dest_path)
                             return
+
                 if rom.multi:
                     self._status.extracting_rom = True
                     print("Multi file rom detected. Extracting...")
@@ -513,11 +530,119 @@ class API:
             except HTTPError as e:
                 if e.code == 403:
                     self._reset_download_status(valid_host=True)
-                    return
+                    continue
+                elif e.code == 404:
+                    self._reset_download_status(valid_host=True, valid_credentials=True)
+                    continue
                 else:
                     raise
             except URLError:
                 self._reset_download_status(valid_host=True)
-                return
+                continue
+
+            filename = self._sanitize_filename(rom.fs_name).split(".")[0]
+            if rom.summary:
+                text_path = os.path.join(
+                    self._file_system.get_sd_catalogue_platform_path(
+                        rom.platform_slug
+                    ),
+                    "text",
+                    f"{filename}.txt",
+                )
+                os.makedirs(os.path.dirname(text_path), exist_ok=True)
+                with open(text_path, "w") as f:
+                    f.write(rom.summary)
+                    f.write("\n\n")
+
+                    if rom.first_release_date:
+                        dt = datetime.datetime.fromtimestamp(
+                            rom.first_release_date / 1000
+                        )
+                        formatted_date = dt.strftime("%Y-%m-%d")
+                        f.write(f"First release date: {formatted_date}\n")
+
+                    if rom.average_rating:
+                        f.write(f"Average rating: {rom.average_rating}\n")
+
+                    if rom.genres:
+                        f.write(f"Genres: {', '.join(rom.genres)}\n")
+
+                    if rom.franchises:
+                        f.write(f"Franchises: {', '.join(rom.franchises)}\n")
+
+                    if rom.companies:
+                        f.write(f"Companies: {', '.join(rom.companies)}\n")
+
+            try:
+                if rom.path_cover_large:
+                    print(f"Downloading cover for {rom.name}")
+                    extension = rom.path_cover_large.split(".")[-1]
+                    cover_path = os.path.join(
+                        self._file_system.get_sd_catalogue_platform_path(
+                            rom.platform_slug
+                        ),
+                        "box",
+                        f"{filename}.{extension}",
+                    )
+                    os.makedirs(os.path.dirname(cover_path), exist_ok=True)
+                    request = Request(
+                        f"{self.host}{rom.path_cover_large}",
+                        headers=self.headers,
+                    )
+                    with urlopen(  # trunk-ignore(bandit/B310)
+                        request
+                    ) as response, open(cover_path, "wb") as out_file:
+                        out_file.write(response.read())
+
+                    # Add alpha channel to the image
+                    add_alpha_channel(cover_path)
+                    print(f"Downloaded cover for {rom.name} at {cover_path}")
+            except HTTPError as e:
+                if e.code == 403:
+                    self._reset_download_status(valid_host=True)
+                    continue
+                elif e.code == 404:
+                    continue
+                else:
+                    raise
+            except URLError:
+                self._reset_download_status(valid_host=True)
+                continue
+
+            try:
+                if rom.id and rom.platform_id:
+                    print(f"Downloading preview image for {rom.name}")
+                    preview_path = os.path.join(
+                        self._file_system.get_sd_catalogue_platform_path(
+                            rom.platform_slug
+                        ),
+                        "preview",
+                        f"{filename}.jpg",
+                    )
+                    os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+                    request = Request(
+                        f"{self.host}/{self._assets_endpoint}/roms/{rom.platform_id}/{rom.id}/screenshots/0.jpg",
+                        headers=self.headers,
+                    )
+                    with urlopen(  # trunk-ignore(bandit/B310)
+                        request
+                    ) as response, open(preview_path, "wb") as out_file:
+                        out_file.write(response.read())
+
+                    # Convert them image to PNG
+                    jpg_to_png(preview_path)
+                    print(f"Downloaded preview for {rom.name} at {preview_path}")
+            except HTTPError as e:
+                if e.code == 403:
+                    self._reset_download_status(valid_host=True)
+                    continue
+                elif e.code == 404:
+                    continue
+                else:
+                    raise
+            except URLError:
+                self._reset_download_status(valid_host=True)
+                continue
+
         # End of download
         self._reset_download_status(valid_host=True, valid_credentials=True)

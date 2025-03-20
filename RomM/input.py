@@ -79,7 +79,6 @@ class Input:
         if current_value != 0:
             if _key_value != 99:
                 return current_value == _key_value
-            print(f"BUTTON: {_key_name} - {current_value}")
             return True
         return False
 
