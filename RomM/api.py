@@ -33,9 +33,9 @@ class API:
         self.username = os.getenv("USERNAME", "")
         self.password = os.getenv("PASSWORD", "")
         self.headers = {}
-        self._exclude_platforms = set(os.getenv("EXCLUDE_PLATFORMS") or [])
-        self._include_collections = set(os.getenv("INCLUDE_COLLECTIONS") or [])
-        self._exclude_collections = set(os.getenv("EXCLUDE_COLLECTIONS") or [])
+        self._exclude_platforms = set(self._getenv_list("EXCLUDE_PLATFORMS"))
+        self._include_collections = set(self._getenv_list("INCLUDE_COLLECTIONS"))
+        self._exclude_collections = set(self._getenv_list("EXCLUDE_COLLECTIONS"))
         self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
         self._status = Status()
         self._file_system = Filesystem()
@@ -44,6 +44,11 @@ class API:
             credentials = f"{self.username}:{self.password}"
             auth_token = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
             self.headers = {"Authorization": f"Basic {auth_token}"}
+
+    @staticmethod
+    def _getenv_list(key: str) -> list[str]:
+        value = os.getenv(key)
+        return [item.strip() for item in value.split(",")] if value is not None else []
 
     @staticmethod
     def _human_readable_size(size_bytes: int) -> Tuple[float, str]:
