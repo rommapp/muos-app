@@ -3,6 +3,7 @@ import json
 import math
 import os
 import re
+import shutil
 import zipfile
 from typing import Tuple
 from urllib.error import HTTPError, URLError
@@ -61,8 +62,14 @@ class API:
         return (s, size_name[i])
 
     def _sanitize_filename(self, filename: str) -> str:
-        invalid_chars = r"[\/\\\*\?\"|\<\>:\t\n\r\b]"
-        return re.sub(invalid_chars, "_", filename)
+        path_parts = os.path.normpath(filename).split(os.sep)
+        sanitized_parts = []
+
+        for _i, part in enumerate(path_parts):
+            sanitized = re.sub(r'[\\/*?:"<>|\t\n\r\b]', "_", part)
+            sanitized_parts.append(sanitized)
+
+        return os.path.join(*sanitized_parts)
 
     def _fetch_user_profile_picture(self, avatar_path: str) -> None:
         fs_extension = avatar_path.split(".")[-1]
@@ -428,86 +435,130 @@ class API:
         self._status.download_rom_ready.set()
         self._status.abort_download.set()
 
+    def _download_file(self, url: str, dest_path: str, rom: Rom) -> bool:
+        """Download a file with progress tracking and abort capability."""
+        print(f"Fetching: {url}")
+        request = Request(url, headers=self.headers)
+
+        if request.type not in ("http", "https"):
+            print("Invalid URL scheme")
+            self._reset_download_status()
+            return False
+
+        print(f"Downloading {rom.name} to {dest_path}")
+
+        # Initialize download stats
+        self._status.total_downloaded_bytes = 0
+        self._status.downloaded_percent = 0
+        chunk_size = 8192  # Larger chunk size for better performance
+
+        with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
+            dest_path, "wb"
+        ) as out_file:
+            while not self._status.abort_download.is_set():
+                chunk = response.read(chunk_size)
+                if not chunk:
+                    print("Download completed")
+                    break
+
+                out_file.write(chunk)
+
+                # Update status
+                self._status.valid_host = True
+                self._status.valid_credentials = True
+                self._status.total_downloaded_bytes += len(chunk)
+
+                # Calculate percentage (avoid division by zero)
+                total_size = max(rom.fs_size_bytes, 1)
+                self._status.downloaded_percent = (
+                    self._status.total_downloaded_bytes / total_size
+                ) * 100
+
+            # Check if download was aborted
+            if self._status.abort_download.is_set():
+                print("Download aborted")
+                self._reset_download_status(True, True)
+                if os.path.exists(dest_path):
+                    os.remove(dest_path)
+                return False
+
+        return True
+
+    def _extract_zip_file(self, zip_path: str, dest_filename: str) -> bool:
+        """Extract a ZIP file with progress tracking and abort capability."""
+        extract_dir = os.path.dirname(zip_path)
+        self._status.extracting_rom = True
+        print("Multi-file ROM detected. Extracting...")
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            # Calculate total size for progress tracking
+            total_size = sum(file.file_size for file in zip_ref.infolist())
+            extracted_size = 0
+            self._status.extracted_percent = 0
+
+            # Process each file in the archive
+            for file in zip_ref.infolist():
+                if self._status.abort_download.is_set():
+                    print("Extraction aborted")
+                    self._reset_download_status(True, True)
+                    return False
+
+                # Sanitize the full path including all nested directories
+                sanitized_foldername= self._sanitize_filename(dest_filename)
+                sanitized_filename = self._sanitize_filename(file.filename)
+                file_path = os.path.join(extract_dir, sanitized_foldername, sanitized_filename)
+
+                # Handle directory entries
+                if file.filename.endswith("/") or file.filename.endswith("\\"):
+                    os.makedirs(file_path, exist_ok=True)
+                    continue
+
+                # Ensure all parent directories exist
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+                # Extract file
+                with zip_ref.open(file) as source, open(file_path, "wb") as target:
+                    shutil.copyfileobj(source, target)
+
+                # Update progress
+                extracted_size += file.file_size
+                self._status.extracted_percent = (
+                    extracted_size / max(total_size, 1)
+                ) * 100
+
+        self._status.extracting_rom = False
+        return True
+
     def download_rom(self) -> None:
         self._status.download_queue.sort(key=lambda rom: rom.name)
         for i, rom in enumerate(self._status.download_queue):
-            self._status.downloading_rom = rom
-            self._status.downloading_rom_position = i + 1
-            dest_path = os.path.join(
-                self._file_system.get_sd_storage_platform_path(rom.platform_slug),
-                self._sanitize_filename(rom.fs_name),
-            )
-            url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            try:
+                # Update status
+                self._status.downloading_rom = rom
+                self._status.downloading_rom_position = i + 1
 
-            try:
-                print(f"Fetching: {url}")
-                request = Request(url, headers=self.headers)
-            except ValueError:
-                self._reset_download_status()
-                return
-            try:
-                if request.type not in ("http", "https"):
-                    self._reset_download_status()
-                    return
-                print(f"Downloading {rom.name} to {dest_path}")
-                with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
-                    dest_path, "wb"
-                ) as out_file:
-                    self._status.total_downloaded_bytes = 0
-                    chunk_size = 1024
-                    while True:
-                        if not self._status.abort_download.is_set():
-                            chunk = response.read(chunk_size)
-                            if not chunk:
-                                print("Finalized download")
-                                break
-                            out_file.write(chunk)
-                            self._status.valid_host = True
-                            self._status.valid_credentials = True
-                            self._status.total_downloaded_bytes += len(chunk)
-                            self._status.downloaded_percent = (
-                                self._status.total_downloaded_bytes
-                                / (
-                                    self._status.downloading_rom.fs_size_bytes + 1
-                                )  # Add 1 virtual byte to avoid division by zero
-                            ) * 100
-                        else:
-                            self._reset_download_status(True, True)
-                            os.remove(dest_path)
-                            return
+                # Prepare paths and URL
+                platform_dir = self._file_system.get_sd_storage_platform_path(
+                    rom.platform_slug
+                )
+                dest_fsname = self._sanitize_filename(rom.fs_name)
+                dest_filename = f"{dest_fsname}.zip" if rom.multi else dest_fsname
+                dest_path = os.path.join(platform_dir, dest_filename)
+                url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
+
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+                # Download the file
+                if not self._download_file(url, dest_path, rom):
+                    return  # Download was aborted or failed
+
+                # Handle multi-file (ZIP) ROMs
                 if rom.multi:
-                    self._status.extracting_rom = True
-                    print("Multi file rom detected. Extracting...")
-                    with zipfile.ZipFile(dest_path, "r") as zip_ref:
-                        total_size = sum(file.file_size for file in zip_ref.infolist())
-                        extracted_size = 0
-                        chunk_size = 1024
-                        for file in zip_ref.infolist():
-                            if not self._status.abort_download.is_set():
-                                file_path = os.path.join(
-                                    os.path.dirname(dest_path),
-                                    self._sanitize_filename(file.filename),
-                                )
-                                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                                with zip_ref.open(file) as source, open(
-                                    file_path, "wb"
-                                ) as target:
-                                    while True:
-                                        chunk = source.read(chunk_size)
-                                        if not chunk:
-                                            break
-                                        target.write(chunk)
-                                        extracted_size += len(chunk)
-                                        self._status.extracted_percent = (
-                                            extracted_size / total_size
-                                        ) * 100
-                            else:
-                                self._reset_download_status(True, True)
-                                os.remove(dest_path)
-                                return
-                    self._status.extracting_rom = False
-                    self._status.downloading_rom = None
+                    if not self._extract_zip_file(dest_path, dest_fsname):
+                        return  # Extraction was aborted or failed
+
+                    # Clean up the ZIP file after successful extraction
                     os.remove(dest_path)
                     print(f"Extracted {rom.name} at {os.path.dirname(dest_path)}")
             except HTTPError as e:
@@ -519,5 +570,6 @@ class API:
             except URLError:
                 self._reset_download_status(valid_host=True)
                 return
+
         # End of download
         self._reset_download_status(valid_host=True, valid_credentials=True)
