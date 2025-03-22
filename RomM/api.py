@@ -500,9 +500,11 @@ class API:
                     return False
 
                 # Sanitize the full path including all nested directories
-                sanitized_foldername= self._sanitize_filename(dest_filename)
+                sanitized_foldername = self._sanitize_filename(dest_filename)
                 sanitized_filename = self._sanitize_filename(file.filename)
-                file_path = os.path.join(extract_dir, sanitized_foldername, sanitized_filename)
+                file_path = os.path.join(
+                    extract_dir, sanitized_foldername, sanitized_filename
+                )
 
                 # Handle directory entries
                 if file.filename.endswith("/") or file.filename.endswith("\\"):
