@@ -447,10 +447,9 @@ class API:
 
         print(f"Downloading {rom.name} to {dest_path}")
 
-        # Initialize download stats
         self._status.total_downloaded_bytes = 0
         self._status.downloaded_percent = 0
-        chunk_size = 8192  # Larger chunk size for better performance
+        chunk_size = 8192
 
         with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
             dest_path, "wb"
@@ -474,7 +473,6 @@ class API:
                     self._status.total_downloaded_bytes / total_size
                 ) * 100
 
-            # Check if download was aborted
             if self._status.abort_download.is_set():
                 print("Download aborted")
                 self._reset_download_status(True, True)
@@ -491,12 +489,10 @@ class API:
         print("Multi-file ROM detected. Extracting...")
 
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            # Calculate total size for progress tracking
             total_size = sum(file.file_size for file in zip_ref.infolist())
             extracted_size = 0
             self._status.extracted_percent = 0
 
-            # Process each file in the archive
             for file in zip_ref.infolist():
                 if self._status.abort_download.is_set():
                     print("Extraction aborted")
@@ -513,14 +509,10 @@ class API:
                     os.makedirs(file_path, exist_ok=True)
                     continue
 
-                # Ensure all parent directories exist
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-                # Extract file
                 with zip_ref.open(file) as source, open(file_path, "wb") as target:
                     shutil.copyfileobj(source, target)
 
-                # Update progress
                 extracted_size += file.file_size
                 self._status.extracted_percent = (
                     extracted_size / max(total_size, 1)
@@ -533,11 +525,9 @@ class API:
         self._status.download_queue.sort(key=lambda rom: rom.name)
         for i, rom in enumerate(self._status.download_queue):
             try:
-                # Update status
                 self._status.downloading_rom = rom
                 self._status.downloading_rom_position = i + 1
 
-                # Prepare paths and URL
                 platform_dir = self._file_system.get_sd_storage_platform_path(
                     rom.platform_slug
                 )
@@ -546,10 +536,8 @@ class API:
                 dest_path = os.path.join(platform_dir, dest_filename)
                 url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
 
-                # Ensure directory exists
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
-                # Download the file
                 if not self._download_file(url, dest_path, rom):
                     return  # Download was aborted or failed
 
@@ -558,7 +546,6 @@ class API:
                     if not self._extract_zip_file(dest_path, dest_fsname):
                         return  # Extraction was aborted or failed
 
-                    # Clean up the ZIP file after successful extraction
                     os.remove(dest_path)
                     print(f"Extracted {rom.name} at {os.path.dirname(dest_path)}")
             except HTTPError as e:
