@@ -482,7 +482,7 @@ class API:
 
         return True
 
-    def _extract_zip_file(self, zip_path: str, dest_filename: str) -> bool:
+    def _extract_zip_file(self, zip_path: str) -> bool:
         """Extract a ZIP file with progress tracking and abort capability."""
         extract_dir = os.path.dirname(zip_path)
         self._status.extracting_rom = True
@@ -500,11 +500,8 @@ class API:
                     return False
 
                 # Sanitize the full path including all nested directories
-                sanitized_foldername = self._sanitize_filename(dest_filename)
                 sanitized_filename = self._sanitize_filename(file.filename)
-                file_path = os.path.join(
-                    extract_dir, sanitized_foldername, sanitized_filename
-                )
+                file_path = os.path.join(extract_dir, sanitized_filename)
 
                 # Handle directory entries
                 if file.filename.endswith("/") or file.filename.endswith("\\"):
@@ -533,8 +530,7 @@ class API:
                 platform_dir = self._file_system.get_sd_storage_platform_path(
                     rom.platform_slug
                 )
-                dest_fsname = self._sanitize_filename(rom.fs_name)
-                dest_filename = f"{dest_fsname}.zip" if rom.multi else dest_fsname
+                dest_filename = self._sanitize_filename(rom.fs_name)
                 dest_path = os.path.join(platform_dir, dest_filename)
                 url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
 
@@ -545,7 +541,7 @@ class API:
 
                 # Handle multi-file (ZIP) ROMs
                 if rom.multi:
-                    if not self._extract_zip_file(dest_path, dest_fsname):
+                    if not self._extract_zip_file(dest_path):
                         return  # Extraction was aborted or failed
 
                     os.remove(dest_path)
