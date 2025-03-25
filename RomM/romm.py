@@ -302,6 +302,12 @@ class RomM:
             ui.button_circle((215, 460), "Y", "Refresh", color=ui.colorGreen)
             ui.button_circle(
                 (320, 460),
+                "R1",
+                f"Select all",
+                color=ui.colorGrayL1,
+            )
+            ui.button_circle(
+                (450, 460),
                 "X",
                 f"Filter: {self.status.current_filter}",
                 color=ui.colorBlue,
@@ -352,6 +358,17 @@ class RomM:
             self.status.current_filter = next(self.status.filters)
             self.roms_selected_position = 0
             self.input.reset_input()
+        elif self.input.key("R1"):
+            if len(self.status.multi_selected_roms):
+                self.status.multi_selected_roms = []
+            else:
+                self.status.multi_selected_roms = []
+                for r in self.status.roms_to_show:
+                    self.status.multi_selected_roms.append(
+                        r
+                    )
+            self.input.reset_input()
+
         elif self.input.key("SELECT"):
             if self.status.download_rom_ready.is_set():
                 if (
