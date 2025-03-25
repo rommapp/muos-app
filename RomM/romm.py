@@ -375,7 +375,7 @@ class RomM:
             if len(self.status.multi_selected_roms) == len(self.status.roms_to_show):
                 self.status.multi_selected_roms = []
             else:
-                self.status.multi_selected_roms = self.status.roms_to_show
+                self.status.multi_selected_roms = self.status.roms_to_show.copy()
             self.input.reset_input()
 
         elif self.input.key("SELECT"):
