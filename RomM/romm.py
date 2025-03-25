@@ -242,11 +242,17 @@ class RomM:
             ].name
             header_color = ui.colorYellow
             prepend_platform_slug = True
+
         total_pages = (
             len(self.status.roms_to_show) + self.max_n_roms - 1
         ) // self.max_n_roms
-        current_page = (self.roms_selected_position // self.max_n_roms) + 1
-        header_text += f" [{current_page if total_pages > 0 else 0}/{total_pages}]"
+        if total_pages > 1:
+            current_page = (self.roms_selected_position // self.max_n_roms) + 1
+            header_text += f" [{current_page}/{total_pages}]"
+
+        if len(self.status.multi_selected_roms) > 0:
+            header_text += f" ({len(self.status.multi_selected_roms)} selected)"
+
         if self.status.current_filter == Filter.ALL:
             self.status.roms_to_show = self.status.roms
         elif self.status.current_filter == Filter.LOCAL:
@@ -257,6 +263,7 @@ class RomM:
             self.status.roms_to_show = [
                 r for r in self.status.roms if not self.fs.is_rom_in_device(r)
             ]
+
         ui.draw_roms_list(
             self.roms_selected_position,
             self.max_n_roms,
@@ -302,15 +309,21 @@ class RomM:
             ui.button_circle((215, 460), "Y", "Refresh", color=ui.colorGreen)
             ui.button_circle(
                 (320, 460),
-                "R1",
-                f"Select all",
-                color=ui.colorGrayL1,
-            )
-            ui.button_circle(
-                (450, 460),
                 "X",
                 f"Filter: {self.status.current_filter}",
                 color=ui.colorBlue,
+            )
+            ui.button_circle(
+                (435 + (len(self.status.current_filter) * 9), 460),
+                "R1",
+                (
+                    "Deselect all"
+                    if len(self.status.multi_selected_roms) > 0
+                    and len(self.status.multi_selected_roms)
+                    >= len(self.status.roms_to_show)
+                    else "Select all"
+                ),
+                color=ui.colorGrayL1,
             )
 
     def _update_roms_view(self):
@@ -359,14 +372,10 @@ class RomM:
             self.roms_selected_position = 0
             self.input.reset_input()
         elif self.input.key("R1"):
-            if len(self.status.multi_selected_roms):
+            if len(self.status.multi_selected_roms) == len(self.status.roms_to_show):
                 self.status.multi_selected_roms = []
             else:
-                self.status.multi_selected_roms = []
-                for r in self.status.roms_to_show:
-                    self.status.multi_selected_roms.append(
-                        r
-                    )
+                self.status.multi_selected_roms = self.status.roms_to_show
             self.input.reset_input()
 
         elif self.input.key("SELECT"):
