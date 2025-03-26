@@ -578,9 +578,7 @@ class API:
             filename = self._sanitize_filename(rom.fs_name).split(".")[0]
             if rom.summary:
                 text_path = os.path.join(
-                    self._file_system.get_sd_catalogue_platform_path(
-                        rom.platform_slug
-                    ),
+                    self._file_system.get_sd_catalogue_platform_path(rom.platform_slug),
                     "text",
                     f"{filename}.txt",
                 )
