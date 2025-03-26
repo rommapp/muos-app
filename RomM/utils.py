@@ -20,3 +20,6 @@ def jpg_to_png(path: str) -> ImageFile:
     img.save(png_path, 'PNG')
     os.remove(path)
     return img
+
+def str_to_bool(s: str) -> bool:
+    return s.lower() in ("yes", "true", "t", "1")

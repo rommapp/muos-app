@@ -16,7 +16,7 @@ from filesystem import MUOS_SUPPORTED_PLATFORMS, Filesystem
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
-from utils import add_alpha_channel, jpg_to_png
+from utils import add_alpha_channel, jpg_to_png, str_to_bool
 
 # Load .env file from one folder above
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
@@ -41,6 +41,7 @@ class API:
         self._include_collections = set(self._getenv_list("INCLUDE_COLLECTIONS"))
         self._exclude_collections = set(self._getenv_list("EXCLUDE_COLLECTIONS"))
         self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
+        self._download_assets = str_to_bool(os.getenv("DOWNLOAD_ASSETS", "false"))
         self._status = Status()
         self._file_system = Filesystem()
 
@@ -606,6 +607,10 @@ class API:
 
                     if rom.companies:
                         f.write(f"Companies: {', '.join(rom.companies)}\n")
+
+            # Don't download covers and previews if the user disabled the option
+            if not self._download_assets:
+                continue
 
             try:
                 if rom.path_cover_large:
