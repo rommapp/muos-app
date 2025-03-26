@@ -6,8 +6,8 @@ from models import Rom
 
 class Filesystem:
     _instance: Optional["Filesystem"] = None
-    _sd1_rom_storage_path = "/mnt/mmc/roms"
-    _sd2_rom_storage_path = "/mnt/sdcard/roms"
+    _sd1_rom_storage_path = "/mnt/mmc/ROMS"
+    _sd2_rom_storage_path = "/mnt/sdcard/ROMS"
     _sd1_catalogue_path = "/mnt/mmc/MUOS/info/catalogue"
     _sd2_catalogue_path = "/mnt/sdcard/MUOS/info/catalogue"
     resources_path = "/mnt/mmc/MUOS/application/RomM/resources"
