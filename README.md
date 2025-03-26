@@ -20,7 +20,7 @@
 
 # Overview
 
-This is a [muOS](https://muos.dev/) app to connects to your RomM instance and allows you to fetch games wirelessly from your Anbernic device.
+A [muOS](https://muos.dev/) app that connects to your RomM instance and allows you to fetch games wirelessly from your Anbernic device.
 
 ## Screenshots
 
