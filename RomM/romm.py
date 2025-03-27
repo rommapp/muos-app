@@ -5,14 +5,18 @@ import time
 from typing import Any, Tuple
 
 import ui
+import sdl2
 from __version__ import version
 from api import API
 from filesystem import Filesystem
 from glyps import glyphs
 from input import Input
 from status import Filter, StartMenuOptions, Status, View
-from ui import colorYellow
 
+# Redirect stdout to log file
+sys.stdout = open('log.txt', 'w', buffering=1)
+    
+ui.query_display()
 
 class RomM:
     spinner_speed = 0.05
@@ -35,12 +39,26 @@ class RomM:
         self.collections_selected_position = 0
         self.roms_selected_position = 0
 
-        self.max_n_platforms = 11
-        self.max_n_collections = 11
-        self.max_n_roms = 10
+        self.max_n_platforms = (ui.screen_height - 130) // 35
+        self.max_n_collections = (ui.screen_height - 130) // 35
+        self.max_n_roms = (ui.screen_height - 130) // 35
+        print(f"Detected resolution: {ui.screen_width} x {ui.screen_height}")
+        print(f"Max ROMs per page: {self.max_n_roms}")
+        self.buttonsX1 = self._button_pos(0.05, 0.98)[0]
+        self.buttonsX2 = self._button_pos(0.25, 0.98)[0]
+        self.buttonsX3 = self._button_pos(0.45, 0.98)[0]
+        self.buttonsX4 = self._button_pos(0.60, 0.98)[0]
+        self.buttonsX5 = self._button_pos(0.80, 0.98)[0]
+        self.buttonsY = self._button_pos(0, 0.98)[1]
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
+       
+    def _button_pos(self, x_percent: float, y_percent: float) -> Tuple[int, int]:
+        """Calculate button position based on screen size percentages."""
+        x = int(ui.screen_width * x_percent)
+        y = int(ui.screen_height * y_percent)
+        return (x, y)
 
     def _render_platforms_view(self):
         ui.draw_platforms_list(
@@ -79,10 +97,10 @@ class RomM:
             ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
             self.status.valid_credentials = True
         else:
-            ui.button_circle((20, 460), "A", "Select", color=ui.colorRed)
-            ui.button_circle((123, 460), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.buttonsX1, self.buttonsY), "A", "Select", color=ui.colorRed)
+            ui.button_circle((self.buttonsX2, self.buttonsY), "Y", "Refresh", color=ui.colorGreen)
             ui.button_circle(
-                (233, 460),
+                (self.buttonsX3, self.buttonsY),
                 "X",
                 (
                     "Collections"
@@ -171,10 +189,10 @@ class RomM:
             ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
             self.status.valid_credentials = True
         else:
-            ui.button_circle((20, 460), "A", "Select", color=ui.colorRed)
-            ui.button_circle((123, 460), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.buttonsX1, self.buttonsY), "A", "Select", color=ui.colorRed)
+            ui.button_circle((self.buttonsX2, self.buttonsY), "Y", "Refresh", color=ui.colorGreen)
             ui.button_circle(
-                (233, 460),
+                (self.buttonsX3, self.buttonsY),
                 "X",
                 (
                     "Collections"
@@ -189,7 +207,6 @@ class RomM:
             if self.status.roms_ready.is_set() and len(self.status.collections) > 0:
                 self.status.roms_ready.clear()
                 self.status.roms = []
-
                 selected_collection = self.status.collections[
                     self.collections_selected_position
                 ]
@@ -197,7 +214,6 @@ class RomM:
                     self.status.selected_virtual_collection = selected_collection
                 else:
                     self.status.selected_collection = selected_collection
-
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
             self.input.reset_input()
@@ -242,17 +258,11 @@ class RomM:
             ].name
             header_color = ui.colorYellow
             prepend_platform_slug = True
-
         total_pages = (
             len(self.status.roms_to_show) + self.max_n_roms - 1
         ) // self.max_n_roms
-        if total_pages > 1:
-            current_page = (self.roms_selected_position // self.max_n_roms) + 1
-            header_text += f" [{current_page}/{total_pages}]"
-
-        if len(self.status.multi_selected_roms) > 0:
-            header_text += f" ({len(self.status.multi_selected_roms)} selected)"
-
+        current_page = (self.roms_selected_position // self.max_n_roms) + 1
+        header_text += f" [{current_page if total_pages > 0 else 0}/{total_pages}]"
         if self.status.current_filter == Filter.ALL:
             self.status.roms_to_show = self.status.roms
         elif self.status.current_filter == Filter.LOCAL:
@@ -263,7 +273,6 @@ class RomM:
             self.status.roms_to_show = [
                 r for r in self.status.roms if not self.fs.is_rom_in_device(r)
             ]
-
         ui.draw_roms_list(
             self.roms_selected_position,
             self.max_n_roms,
@@ -304,27 +313,11 @@ class RomM:
             ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
             self.status.valid_credentials = True
         else:
-            ui.button_circle((20, 460), "A", "Download", color=ui.colorRed)
-            ui.button_circle((135, 460), "B", "Back", color=ui.colorYellow)
-            ui.button_circle((215, 460), "Y", "Refresh", color=ui.colorGreen)
-            ui.button_circle(
-                (320, 460),
-                "X",
-                f"Filter: {self.status.current_filter}",
-                color=ui.colorBlue,
-            )
-            ui.button_circle(
-                (435 + (len(self.status.current_filter) * 9), 460),
-                "R1",
-                (
-                    "Deselect all"
-                    if len(self.status.multi_selected_roms) > 0
-                    and len(self.status.multi_selected_roms)
-                    >= len(self.status.roms_to_show)
-                    else "Select all"
-                ),
-                color=ui.colorGrayL1,
-            )
+            ui.button_circle((self.buttonsX1, self.buttonsY), "A", "Download", color=ui.colorRed)
+            ui.button_circle((self.buttonsX2 * 1.1, self.buttonsY), "B", "Back", color=ui.colorYellow)
+            ui.button_circle((self.buttonsX3, self.buttonsY), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.buttonsX4, self.buttonsY), "X", f"Filter: {self.status.current_filter}", color=ui.colorBlue)
+            ui.button_circle((self.buttonsX5, self.buttonsY), "R1", ("Deselect all" if len(self.status.multi_selected_roms) > 0 and len(self.status.multi_selected_roms) >= len(self.status.roms_to_show) else "Select all"), color=ui.colorGrayL1)
 
     def _update_roms_view(self):
         if self.input.key("A"):
@@ -377,7 +370,6 @@ class RomM:
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
             self.input.reset_input()
-
         elif self.input.key("SELECT"):
             if self.status.download_rom_ready.is_set():
                 if (
@@ -560,6 +552,7 @@ class RomM:
                 self.input.reset_input()
             elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
                 ui.draw_end()
+                self.input.cleanup()
                 sys.exit()
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
@@ -588,6 +581,17 @@ class RomM:
 
     def update(self):
         ui.draw_clear()
+
+        # Poll SDL2 events
+        event = sdl2.SDL_Event()
+        while sdl2.SDL_PollEvent(event) != 0:
+            if event.type == sdl2.SDL_QUIT:
+                ui.draw_end()
+                self.input.cleanup()
+                sys.exit(0)
+            self.input.check(event)
+
+        self.input.check()  # Poll controller state
 
         if self.status.me_ready.is_set():
             ui.draw_header(self.api.host, self.api.username)
@@ -647,7 +651,6 @@ class RomM:
                     and not self.status.show_contextual_menu
                 ):
                     self._update_platforms_view()
-
         # Render start menu
         if self.status.show_start_menu:
             self._render_start_menu()
@@ -660,16 +663,28 @@ class RomM:
 
         ui.draw_update()
 
-
 def main():
+    # Initialize SDL2 with video and game controller support
+    if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_GAMECONTROLLER) < 0:
+        print(f"SDL2 initialization failed: {sdl2.SDL_GetError()}")
+        sys.exit(1)
+    sdl2.SDL_GameControllerEventState(sdl2.SDL_ENABLE)
+
+    # Set up UI
+    ui.query_display()
+    ui.draw_start()
+    ui.screen_reset()
+    imgMain = ui.crate_image()
+    ui.draw_active(imgMain)
+
     romm = RomM()
     romm.start()
 
     while True:
         romm.update()
         # Add a small sleep to prevent 100% CPU usage
-        time.sleep(0.01)
-
+        sdl2.SDL_Delay(16)  # ~60 FPS
 
 if __name__ == "__main__":
     main()
+    

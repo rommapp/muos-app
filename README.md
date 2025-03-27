@@ -20,7 +20,7 @@
 
 # Overview
 
-This is a [muOS](https://muos.dev/) app to connects to your RomM instance and allows you to fetch games wirelessly from your Anbernic device.
+This is a retro handheld app that connects to your RomM Host instance and allows you to fetch games wirelessly from your retro handheld device.
 
 ## Screenshots
 
@@ -31,13 +31,10 @@ This is a [muOS](https://muos.dev/) app to connects to your RomM instance and al
 
 ## Installation
 
-We leverate the muOS [Archive Manager](https://muos.dev/help/archive) to install/update the app.
+- EmulationStation users will add the `RomM App.sh` and `romM` folder to your client in `roms/ports`.
+- muOS users will add the `RomM App.sh` file to `mnt/mmc/ROMS/PORTS` or `mnt/sdcard/ROMS/PORTS` and then add the `RomM` folder to the associated `ports` directory.
 
-1. Head to the [latest release](https://github.com/rommapp/muos-app/releases/latest) and download the `romm_muOS_install_x.x.x.zip` file.
-2. Move the **compressed** ZIP file to `/mnt/mmc/ARCHIVE` on your device.
-3. Launch the manager from `Applications > Archive Manager` and select `romm_muOS_install_x.x.x.zip`.
-4. Once installed, make a copy of `/mnt/mmc/MUOS/application/RomM/env.template`, rename it to `/mnt/mmc/MUOS/application/RomM/.env`, edit it (any method is fine, we recommend SSH) and set `HOST`, `USERNAME` and `PASSWORD`.
-5. Launch the app from `Applications > RomM` and start browsing your collection.
+PIL, dotenv, and PySDL2 are bundled with the package so as long as you have Python and an internet connection (as well as a `RomM Server` to connect to) it will work out of the box! Modify `env-template` or `.env` inside the `romM` folder.
 
 ## Support
 
