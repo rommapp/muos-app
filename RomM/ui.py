@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import shutil
 from typing import Optional, Tuple, List, Dict, Any
 
 # Redirect stdout to log file
@@ -256,9 +257,21 @@ def draw_header(host, username):
     activeImage.paste(
         logo, (pos_logo[0], pos_logo[1]), mask=logo if logo.mode == "RGBA" else None
     )
+    
+    roms_path = fs.get_roms_storage_path()
+    total, used, free = shutil.disk_usage(roms_path)
+
+    # Convert to GB
+    total_gb = total / (1024 ** 3)
+    used_gb = used / (1024 ** 3)
+
+    # Calculate percentage
+    used_percentage = (used / total) * 100
+
     draw_text(
         (pos_text[0], pos_text[1]),
-        f"{glyphs.host} {host} | {glyphs.user} {username} | {glyphs.microsd} {fs.get_roms_storage_path()}"
+        f"{glyphs.host} {host} | {glyphs.user} {username}\n"
+        f"{glyphs.microsd} {roms_path} ({used_gb:.1f}/{total_gb:.1f} GB, {used_percentage:.1f}% used)"
     )
     if status.profile_pic_path:
         profile_pic = Image.open(status.profile_pic_path)
@@ -277,7 +290,7 @@ def draw_header(host, username):
 def draw_platforms_list(
     platforms_selected_position, max_n_platforms, platforms, fill=colorViolet
 ):
-    draw_rectangle_r([10, 35, screen_width - 10, screen_height - 43], 5, fill=colorGrayD2, outline=None)
+    draw_rectangle_r([10, 70, screen_width - 10, screen_height - 43], 5, fill=colorGrayD2, outline=None)
     start_idx = int(platforms_selected_position / max_n_platforms) * max_n_platforms
     end_idx = start_idx + max_n_platforms
     for i, p in enumerate(platforms[start_idx:end_idx]):
@@ -289,7 +302,7 @@ def draw_platforms_list(
         )
         row_list(
             row_text,
-            (20, 45 + (i * 35)),
+            (20, 90 + (i * 35)),
             screen_width - 40,
             32,
             is_selected,
@@ -300,7 +313,7 @@ def draw_platforms_list(
 def draw_collections_list(
     collections_selected_position, max_n_collections, collections, fill=colorViolet
 ):
-    draw_rectangle_r([10, 35, screen_width - 10, screen_height - 43], 5, fill=colorGrayD2, outline=None)
+    draw_rectangle_r([10, 75, screen_width - 10, screen_height - 43], 5, fill=colorGrayD2, outline=None)
     start_idx = (
         int(collections_selected_position / max_n_collections) * max_n_collections
     )

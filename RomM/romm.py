@@ -399,7 +399,7 @@ class RomM:
                 ]
                 is_in_device = os.path.exists(
                     os.path.join(
-                        self.fs.get_sd_storage_platform_path(
+                        self.fs.get_storage_platform_path(
                             selected_rom.platform_slug
                         ),
                         selected_rom.fs_name,
@@ -412,7 +412,7 @@ class RomM:
                             1,
                             lambda: os.remove(
                                 os.path.join(
-                                    self.fs.get_sd_storage_platform_path(
+                                    self.fs.get_storage_platform_path(
                                         self.status.roms_to_show[
                                             self.roms_selected_position
                                         ].platform_slug
