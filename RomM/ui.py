@@ -355,9 +355,9 @@ def draw_roms_list(
     multi_selected_roms,
     prepend_platform_slug=False,
 ):
-    draw_rectangle_r([10, 37, screen_width - 10, 100], 5, outline=colorGrayD2)
+    draw_rectangle_r([10, 50, screen_width - 10, 100], 5, outline=colorGrayD2)
     draw_text(
-        (screen_width / 2, 55),
+        (screen_width / 2, 60),
         header_text,
         color=header_color,
         anchor="mm",
@@ -365,33 +365,38 @@ def draw_roms_list(
     draw_rectangle_r([10, 70, screen_width - 10, screen_height - 43], 0, fill=colorGrayD2, outline=None)
     start_idx = int(roms_selected_position / max_n_roms) * max_n_roms
     end_idx = min(start_idx + max_n_roms, len(roms))
-    max_len_text = int((screen_width - 71) / 11) - (4 if prepend_platform_slug else 0)  # Approx char width
+    
+    # Adjust max text length to reserve space for file size and padding
+    padding = 4  # Additional padding in characters
+    max_len_text = int((screen_width - 71) / 11) - (4 if prepend_platform_slug else 0) - padding
+
     for i, r in enumerate(roms[start_idx:end_idx]):
         is_selected = i == (roms_selected_position % max_n_roms)
         is_in_device = fs.is_rom_in_device(r)
         sync_flag_text = f"{glyphs.cloud_sync}" if is_in_device else ""
+        
+        # Build base row text
         row_text = r.name
         row_text += f" ({','.join(r.languages)})" if r.languages else ""
         row_text += f" ({','.join(r.regions)})" if r.regions else ""
         row_text += f" ({','.join(r.revision)})" if r.revision else ""
         row_text += f" ({','.join(r.tags)})" if r.tags else ""
+        
+        # Handle text scrolling
         if len(row_text) > max_len_text:
-            row_text = row_text + " "  # add empty space for the rotation
-        shift_offset = (int(time.time() * 2)) % len(
-            row_text
-        )  # Calculate shift offset based on time
-        row_text = (
-            row_text[shift_offset:] + row_text[:shift_offset]
-            if len(row_text) > max_len_text
-            else row_text
-        )  # Shift text
-        row_text = (
-            f"{row_text} [{r.fs_size[0]}{r.fs_size[1]}] {sync_flag_text}"
-            if len(row_text) <= max_len_text
-            else row_text[:max_len_text]
-            + f" [{r.fs_size[0]}{r.fs_size[1]}] {sync_flag_text}"
-        )
+            row_text = row_text + " "
+            shift_offset = (int(time.time() * 2)) % len(row_text)
+            row_text = row_text[shift_offset:] + row_text[:shift_offset]
+        
+        # Truncate base text and append file size with padding
+        size_text = f"[{r.fs_size[0]}{r.fs_size[1]}] {sync_flag_text}"
+        if len(row_text) > max_len_text:
+            row_text = row_text[:max_len_text]
+        row_text = f"{row_text} {size_text}"
+        
+        # Add checkbox
         row_text = f"{glyphs.checkbox_selected if r in multi_selected_roms else glyphs.checkbox} {row_text}"
+        
         row_list(
             row_text,
             (20, 80 + (i * 35)),

@@ -44,12 +44,15 @@ class RomM:
         self.max_n_roms = (ui.screen_height - 130) // 35
         print(f"Detected resolution: {ui.screen_width} x {ui.screen_height}")
         print(f"Max ROMs per page: {self.max_n_roms}")
-        self.buttonsX1 = self._button_pos(0.05, 0.98)[0]
-        self.buttonsX2 = self._button_pos(0.25, 0.98)[0]
-        self.buttonsX3 = self._button_pos(0.45, 0.98)[0]
-        self.buttonsX4 = self._button_pos(0.60, 0.98)[0]
-        self.buttonsX5 = self._button_pos(0.80, 0.98)[0]
-        self.buttonsY = self._button_pos(0, 0.98)[1]
+
+        # Calculate button positions dynamically
+        self.num_buttons = 5
+        self.button_spacing = ui.screen_width / (self.num_buttons + 1)  # Divide screen into equal segments + 1 for padding
+        self.buttonsY = int(ui.screen_height * 0.98)  # Keep Y position consistent
+        self.button_positions = [
+            (int(self.button_spacing * i + self.button_spacing / 2), self.buttonsY) 
+            for i in range(self.num_buttons)
+        ]
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
@@ -97,10 +100,10 @@ class RomM:
             ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
             self.status.valid_credentials = True
         else:
-            ui.button_circle((self.buttonsX1, self.buttonsY), "A", "Select", color=ui.colorRed)
-            ui.button_circle((self.buttonsX2, self.buttonsY), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.button_positions[0]), "A", "Select", color=ui.colorRed)
+            ui.button_circle((self.button_positions[1]), "Y", "Refresh", color=ui.colorGreen)
             ui.button_circle(
-                (self.buttonsX3, self.buttonsY),
+                (self.button_positions[2]),
                 "X",
                 (
                     "Collections"
@@ -189,10 +192,10 @@ class RomM:
             ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
             self.status.valid_credentials = True
         else:
-            ui.button_circle((self.buttonsX1, self.buttonsY), "A", "Select", color=ui.colorRed)
-            ui.button_circle((self.buttonsX2, self.buttonsY), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.button_positions[0]), "A", "Select", color=ui.colorRed)
+            ui.button_circle((self.button_positions[1]), "Y", "Refresh", color=ui.colorGreen)
             ui.button_circle(
-                (self.buttonsX3, self.buttonsY),
+                (self.button_positions[2]),
                 "X",
                 (
                     "Collections"
@@ -313,11 +316,17 @@ class RomM:
             ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
             self.status.valid_credentials = True
         else:
-            ui.button_circle((self.buttonsX1, self.buttonsY), "A", "Download", color=ui.colorRed)
-            ui.button_circle((self.buttonsX2 * 1.1, self.buttonsY), "B", "Back", color=ui.colorYellow)
-            ui.button_circle((self.buttonsX3, self.buttonsY), "Y", "Refresh", color=ui.colorGreen)
-            ui.button_circle((self.buttonsX4, self.buttonsY), "X", f"Filter: {self.status.current_filter}", color=ui.colorBlue)
-            ui.button_circle((self.buttonsX5, self.buttonsY), "R1", ("Deselect all" if len(self.status.multi_selected_roms) > 0 and len(self.status.multi_selected_roms) >= len(self.status.roms_to_show) else "Select all"), color=ui.colorGrayL1)
+            ui.button_circle((self.button_positions[0]), "A", "Download", color=ui.colorRed)
+            ui.button_circle((self.button_positions[1]), "B", "Back", color=ui.colorYellow)
+            ui.button_circle((self.button_positions[2]), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.button_positions[3]), "X", f"Filter: {self.status.current_filter}", color=ui.colorBlue)
+            ui.button_circle(
+                (self.button_positions[4]), 
+                "R1", ("Deselect all" 
+                if len(self.status.multi_selected_roms) > 0 and len(self.status.multi_selected_roms) >= len(self.status.roms_to_show) 
+                else "Select all"), 
+                color=ui.colorGrayL1
+            )
 
     def _update_roms_view(self):
         if self.input.key("A"):
@@ -602,7 +611,7 @@ class RomM:
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
                 self.input.reset_input()
-            ui.button_circle((20, 460), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.button_positions[0]), "Y", "Refresh", color=ui.colorGreen)
             ui.draw_text(
                 (ui.screen_width / 2, ui.screen_height / 2),
                 f"Error: Can't connect to host\n{self.api.host}",
@@ -615,7 +624,7 @@ class RomM:
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
                 self.input.reset_input()
-            ui.button_circle((20, 460), "Y", "Refresh", color=ui.colorGreen)
+            ui.button_circle((self.button_positions[0]), "Y", "Refresh", color=ui.colorGreen)
             ui.draw_text(
                 (ui.screen_width / 2, ui.screen_height / 2),
                 "Error: Permission denied",
