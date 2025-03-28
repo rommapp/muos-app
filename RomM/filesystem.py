@@ -55,7 +55,7 @@ class Filesystem:
         )
 
     def get_sd2_catalogue_platform_path(self, platform: str) -> str:
-        return os.path.join(self._sd2_catalogue_path, platform)
+        return os.path.join(self._sd2_catalogue_path, MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(platform, platform))
 
     def set_sd_storage(self, sd: int) -> None:
         if sd == 1:
@@ -99,12 +99,16 @@ class Filesystem:
             return self.get_sd2_catalogue_platform_path(platform)
 
     def is_rom_in_device(self, rom: Rom) -> bool:
-        return os.path.exists(
-            os.path.join(
-                self.get_sd_storage_platform_path(rom.platform_slug),
-                rom.fs_name if not rom.multi else f"{rom.fs_name}.m3u",
-            )
+        path = os.path.join(
+            self.get_sd_storage_platform_path(rom.platform_slug),
+            rom.fs_name if not rom.multi else f"{rom.fs_name}.m3u",
         )
+        if os.path.exists(path):
+            if not rom.multi:
+                return os.path.getsize(path) == rom.fs_size_bytes
+            else:
+                return True
+        return False
 
 
 MUOS_SUPPORTED_PLATFORMS_FS_MAP = {

@@ -18,12 +18,14 @@ Rom = namedtuple(
         "revision",
         "tags",
         "path_cover_large",
+        "path_cover_small",
+        "path_screenshot",
         "first_release_date",
         "average_rating",
         "genres",
         "franchises",
         "companies",
-        "age_ratings",
+        "age_ratings"
     ],
 )
 Collection = namedtuple("Collection", ["id", "name", "rom_count", "virtual"])
