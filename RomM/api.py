@@ -619,89 +619,31 @@ class API:
             if not self._download_assets:
                 continue
 
-            asset_dest_path = os.path.join(
+            box_path = os.path.join(
                 self._file_system.get_sd_catalogue_platform_path(
                     rom.platform_slug
                 ),
                 "box",
                 f"{filename}.png",
             )
-            os.makedirs(os.path.dirname(asset_dest_path), exist_ok=True)
-            self._image_utils.process_assets(fullscreen = self._fullscreen_assets, 
+            preview_path = os.path.join(
+                self._file_system.get_sd_catalogue_platform_path(
+                    rom.platform_slug
+                ),
+                "preview",
+                f"{filename}.png",
+            )
+
+            # Download cover and preview images
+            os.makedirs(os.path.dirname(box_path), exist_ok=True)
+            os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+
+            self._image_utils.process_assets(fullscreen=self._fullscreen_assets, 
                                              cover_url=f"{self.host}{rom.path_cover_small}", 
                                              screenshot_url=f"{self.host}{rom.path_screenshot}", 
-                                             dest_path=asset_dest_path, headers=self.headers)
-
-            # try:
-            #     if rom.path_cover_small:
-            #         print(f"Downloading cover for {rom.name}")
-            #         extension = rom.path_cover_small.split(".")[-1]
-            #         cover_path = os.path.join(
-            #             self._file_system.get_sd_catalogue_platform_path(
-            #                 rom.platform_slug
-            #             ),
-            #             "box",
-            #             f"{filename}.{extension}",
-            #         )
-            #         os.makedirs(os.path.dirname(cover_path), exist_ok=True)
-            #         request = Request(
-            #             f"{self.host}{rom.path_cover_small}",
-            #             headers=self.headers,
-            #         )
-            #         with urlopen(  # trunk-ignore(bandit/B310)
-            #             request
-            #         ) as response, open(cover_path, "wb") as out_file:
-            #             out_file.write(response.read())
-
-            #         # Add alpha channel to the image
-            #         add_alpha_channel(cover_path)
-            #         print(f"Downloaded cover for {rom.name} at {cover_path}")
-            # except HTTPError as e:
-            #     if e.code == 403:
-            #         self._reset_download_status(valid_host=True)
-            #         continue
-            #     elif e.code == 404:
-            #         continue
-            #     else:
-            #         raise
-            # except URLError:
-            #     self._reset_download_status(valid_host=True)
-            #     continue
-
-            try:
-                if rom.id and rom.platform_id:
-                    print(f"Downloading preview image for {rom.name}")
-                    preview_path = os.path.join(
-                        self._file_system.get_sd_catalogue_platform_path(
-                            rom.platform_slug
-                        ),
-                        "preview",
-                        f"{filename}.jpg",
-                    )
-                    os.makedirs(os.path.dirname(preview_path), exist_ok=True)
-                    request = Request(
-                        f"{self.host}/{self._assets_endpoint}/roms/{rom.platform_id}/{rom.id}/screenshots/0.jpg",
-                        headers=self.headers,
-                    )
-                    with urlopen(  # trunk-ignore(bandit/B310)
-                        request
-                    ) as response, open(preview_path, "wb") as out_file:
-                        out_file.write(response.read())
-
-                    # Convert them image to PNG
-                    jpg_to_png(preview_path)
-                    print(f"Downloaded preview for {rom.name} at {preview_path}")
-            except HTTPError as e:
-                if e.code == 403:
-                    self._reset_download_status(valid_host=True)
-                    continue
-                elif e.code == 404:
-                    continue
-                else:
-                    raise
-            except URLError:
-                self._reset_download_status(valid_host=True)
-                continue
+                                             box_path=box_path,
+                                             preview_path=preview_path,
+                                             headers=self.headers)
 
         # End of download
         self._reset_download_status(valid_host=True, valid_credentials=True)

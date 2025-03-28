@@ -1,9 +1,6 @@
 import os
 from typing import Optional
-
-from models import Rom
 from PIL import Image, ImageDraw, ImageFilter
-
 
 class ImageUtils:
     _instance: Optional["ImageUtils"] = None
@@ -57,23 +54,30 @@ class ImageUtils:
             print(f"Error loading image from URL {url}: {e}")
             return None
     
-    def process_assets(self, fullscreen: bool, cover_url: str, screenshot_url: str, dest_path: str, headers) -> None:
-        print(f"process_assets -> {fullscreen} {cover_url} - {screenshot_url} - {dest_path}")
+    def process_assets(self, fullscreen: bool, cover_url: str, screenshot_url: str, box_path: str, preview_path: str, headers) -> None:
+        print(f"process_assets -> {fullscreen} {cover_url} - {screenshot_url} - {box_path} - {preview_path}")
 
         if not cover_url and not screenshot_url:
             return
 
         final_width, final_height = self.width, self.height
         
-        background = (
-            ( screenshot_url and self.load_image_from_url(screenshot_url, headers) ) or Image.new('RGBA', (final_width, final_height), (0, 0, 0, 0))
-            ) if fullscreen else None
+        background = None
         
-        foreground = self.load_image_from_url(cover_url, headers) if cover_url else None
+        preview = self.load_image_from_url(screenshot_url, headers) if screenshot_url else None
 
-        if background:
-            background = background.resize((final_width, final_height))
-            background.putalpha(self.fade_mask)
+        if preview:
+            preview = preview.resize((final_width, final_height))
+            preview.save(preview_path)
+
+        if fullscreen:
+            if preview:
+                background = preview
+                background.putalpha(self.fade_mask)
+            else:  
+                background = Image.new('RGBA', (final_width, final_height), (0, 0, 0, 0))
+
+        foreground = self.load_image_from_url(cover_url, headers) if cover_url else None
 
         if foreground:
             max_cover_width = 215
@@ -95,5 +99,5 @@ class ImageUtils:
             else:
                 background = foreground
 
-        background.save(dest_path)
+        background.save(box_path)
     
