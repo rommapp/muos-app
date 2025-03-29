@@ -39,6 +39,9 @@ build:
 	pip install --no-cache-dir --platform manylinux_2_28_aarch64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
 	rm .build/requirements.txt
 
+	# Move pillow libs to the right place
+	mv .build/RomM/deps/pillow.libs .build/RomM/libs
+
 	# Remove unnecessary files
 	find .build/RomM/deps -name "*.dist-info" -type d -exec rm -rf {} \; 2>/dev/null || true
 	find .build/RomM/deps -name "*__pycache__" -type d -exec rm -rf {} \; 2>/dev/null || true

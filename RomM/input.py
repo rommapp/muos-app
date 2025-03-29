@@ -49,7 +49,9 @@ class Input:
 
     def check(self, event=None) -> None:
         if event:
+            print(f"Event type: {event.type}")
             if event.type == sdl2.SDL_KEYDOWN:
+                print(f"Key pressed: {event.key.keysym.sym}")
                 key = event.key.keysym.sym
                 if key in self._key_mapping:
                     with self._input_lock:
@@ -62,6 +64,7 @@ class Input:
                         else:
                             self._key_value = 1
             elif event.type == sdl2.SDL_KEYUP:
+                print(f"Key released: {event.key.keysym.sym}")
                 key = event.key.keysym.sym
                 if key in self._key_mapping and self._key_code == key:
                     self.reset_input()
