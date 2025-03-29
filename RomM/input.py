@@ -1,5 +1,8 @@
 import os
 import sys
+import sdl2
+import sdl2.ext
+import sdl2.sdlimage
 from threading import Lock
 from typing import Optional
 
@@ -8,15 +11,6 @@ pylibs_path = os.path.join(portmaster_base, "pylibs")
 exlibs_path = os.path.join(portmaster_base, "exlibs")
 sys.path.append(pylibs_path)
 sys.path.append(exlibs_path)
-
-try:
-    import sdl2
-    import sdl2.ext
-    import sdl2.sdlimage
-except ModuleNotFoundError as e:
-    print(f"Failed to import sdl2: {e}")
-    sys.exit(1)
-
 
 class Input:
     _instance: Optional["Input"] = None

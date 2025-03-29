@@ -19,7 +19,6 @@ source "${controlfolder}/control.txt"
 get_controls
 
 GAMEDIR="/${directory}/ports/RomM"
-LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"

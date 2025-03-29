@@ -1,26 +1,44 @@
 import os
+from pathlib import Path
 from typing import Optional
 
 import platform_maps
 from models import Rom
 
 
+def _get_muos_parent_path(file_path) -> Optional[Path]:
+    path = Path(file_path).resolve()
+
+    while path != Path('/'):
+        if path.name == 'MUOS':
+            return path.parent
+        path = path.parent
+
+    return None
+
+
+
 class Filesystem:
     _instance: Optional["Filesystem"] = None
-    # Base path: Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)
-    _base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+    _muos_parent_path = _get_muos_parent_path(__file__)
+    is_muos = _muos_parent_path is not None
+    
+    # Set the base path
+    if is_muos:
+        _base_path = _muos_parent_path
+    else:
+        # Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)
+        _base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    
     # Resources path: Use current working directory + "resources"
     resources_path = os.path.join(os.getcwd(), "resources")
-    # Check if running on muOS
-    _is_muOS = os.path.exists(os.path.join(_base_path, "MUOS"))
 
-    # ROMs storage path: Default to ../../ (the roms directory), overridable via environment variable
-    # If running on muOS, change the path
-    if _is_muOS:
-        _roms_storage_path = os.path.join(
-            _base_path, "ROMS"
-        )  # You can adjust the path as needed
+    # ROMs storage path
+    if is_muos:
+        _roms_storage_path = os.path.join(_base_path, "ROMS")
     else:
+        # Default to the ROMs directory, overridable via environment variable
         _roms_storage_path = os.environ.get("ROMS_STORAGE_PATH", _base_path)
 
     def __new__(cls):
@@ -49,7 +67,7 @@ class Filesystem:
             platform_dir = platform_dir[0]
 
         # If running on muOS, override the platform_dir with the MUOS mapping
-        if self._is_muOS:
+        if self.is_muos:
             platform_dir = platform_maps.MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(
                 platform, platform_dir
             )

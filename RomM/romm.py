@@ -13,10 +13,6 @@ from glyps import glyphs
 from input import Input
 from status import Filter, StartMenuOptions, Status, View
 
-# Redirect stdout to log file
-sys.stdout = open("log.txt", "w", buffering=1)
-
-
 class RomM:
     spinner_speed = 0.05
     start_menu_options = [

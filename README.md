@@ -32,7 +32,7 @@ An app for CFWs that connects to your RomM instance and allows you to fetch game
 ## Installation
 
 - EmulationStation users will add the `RomM App.sh` and `RomM` folder to your client in `roms/ports`.
-TODO: add instructions for muOS
+  TODO: add instructions for muOS
 
 ## Support
 

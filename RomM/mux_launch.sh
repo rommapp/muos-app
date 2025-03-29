@@ -24,9 +24,9 @@ cd "${ROOT_DIR}" || exit
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${ROOT_DIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
+export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 
-LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
-python3 main.py >"${LOG_FILE}" 2>&1
+python3 -u main.py >"${LOG_FILE}" 2>&1
 
 SCREEN_TYPE="internal"
 DEVICE_MODE="$(GET_VAR "global" "boot/device_mode")"

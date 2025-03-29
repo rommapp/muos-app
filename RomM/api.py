@@ -3,7 +3,6 @@ import json
 import math
 import os
 import re
-import sys
 import zipfile
 from typing import Tuple
 from urllib.error import HTTPError, URLError
@@ -11,17 +10,10 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 import platform_maps
-from dotenv import load_dotenv
 from filesystem import Filesystem
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
-
-# Load .env file from one folder above
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-
-# Redirect stdout to log file
-sys.stdout = open("log.txt", "w", buffering=1)
 
 
 class API:
@@ -234,13 +226,11 @@ class API:
             self._status.valid_credentials = False
             return
         platforms = json.loads(response.read().decode("utf-8"))
-        if isinstance(platforms, dict):
-            platforms = platforms["items"]
         _platforms: list[Platform] = []
 
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
-        if not self._file_system._is_muOS:
+        if not self._file_system.is_muos:
             roms_path = self._file_system.get_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
@@ -252,7 +242,7 @@ class API:
         for platform in platforms:
             if platform["rom_count"] > 0:
                 platform_slug = platform["slug"].lower()
-                if self._file_system._is_muOS:
+                if self._file_system.is_muos:
                     if (
                         platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS
                         or platform_slug in self._exclude_platforms
@@ -268,6 +258,7 @@ class API:
                         or platform_slug in self._exclude_platforms
                     ):
                         continue
+                
                 _platforms.append(
                     Platform(
                         id=platform["id"],
@@ -284,6 +275,7 @@ class API:
 
         _platforms.sort(key=lambda platform: platform.display_name)
         self._status.platforms = _platforms
+        print(f"Fetched {len(_platforms)} platforms")
         self._status.valid_host = True
         self._status.valid_credentials = True
         self._status.platforms_ready.set()
@@ -433,7 +425,7 @@ class API:
 
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
-        if not self._file_system._is_muOS:
+        if not self._file_system.is_muos:
             roms_path = self._file_system.get_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
@@ -445,7 +437,7 @@ class API:
         _roms = []
         for rom in roms:
             platform_slug = rom["platform_slug"].lower()
-            if self._file_system._is_muOS:
+            if self._file_system.is_muos:
                 if platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS:
                     continue
             else:

@@ -1,6 +1,5 @@
 import os
 import shutil
-import sys
 import time
 
 import sdl2
@@ -10,9 +9,6 @@ from filesystem import Filesystem
 from glyps import glyphs
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
-
-# Redirect stdout to log file
-sys.stdout = open("log.txt", "w", buffering=1)
 
 screen_width = 0
 screen_height = 0
@@ -76,7 +72,7 @@ def draw_end():
         backend.end()
 
 
-def crate_image():
+def create_image():
     return Image.new("RGBA", (screen_width, screen_height), color="black")
 
 
@@ -507,11 +503,3 @@ class SDL2Backend:
             sdl2.SDL_DestroyWindow(self.window)
         sdl2.SDL_Quit()
         print("SDL2 backend closed.")
-
-
-# Query display and initialize
-query_display()
-draw_start()
-screen_reset()
-imgMain = crate_image()
-draw_active(imgMain)

@@ -6,11 +6,16 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
+import sdl2
+from dotenv import load_dotenv
+
+# Load .env file from one folder above
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
+
 
 def main():
     import ui
-    import sdl2
-
     from romm import RomM
 
     # Initialize SDL2 with video and game controller support
@@ -23,8 +28,7 @@ def main():
     ui.query_display()
     ui.draw_start()
     ui.screen_reset()
-    imgMain = ui.crate_image()
-    ui.draw_active(imgMain)
+    ui.draw_active(ui.create_image())
 
     romm = RomM()
     romm.start()
