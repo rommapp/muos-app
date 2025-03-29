@@ -8,6 +8,7 @@ sys.path.insert(0, libs_path)
 
 # trunk-ignore(ruff/E402)
 import sdl2
+
 # trunk-ignore(ruff/E402)
 from dotenv import load_dotenv
 

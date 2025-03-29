@@ -1,16 +1,18 @@
 import os
 import sys
+from threading import Lock
+from typing import Optional
+
 import sdl2
 import sdl2.ext
 import sdl2.sdlimage
-from threading import Lock
-from typing import Optional
 
 portmaster_base = "/storage/roms/ports/PortMaster"
 pylibs_path = os.path.join(portmaster_base, "pylibs")
 exlibs_path = os.path.join(portmaster_base, "exlibs")
 sys.path.append(pylibs_path)
 sys.path.append(exlibs_path)
+
 
 class Input:
     _instance: Optional["Input"] = None

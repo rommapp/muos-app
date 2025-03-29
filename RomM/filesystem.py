@@ -9,13 +9,12 @@ from models import Rom
 def _get_muos_parent_path(file_path) -> Optional[str]:
     path = Path(file_path).resolve()
 
-    while path != Path('/'):
-        if path.name == 'MUOS':
+    while path != Path("/"):
+        if path.name == "MUOS":
             return str(path.parent)
         path = path.parent
 
     return None
-
 
 
 class Filesystem:
@@ -23,14 +22,16 @@ class Filesystem:
 
     _muos_parent_path = _get_muos_parent_path(__file__)
     is_muos = _muos_parent_path is not None
-    
+
     # Set the base path
     if _muos_parent_path:
         _base_path = _muos_parent_path
     else:
         # Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)
-        _base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    
+        _base_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+
     # Resources path: Use current working directory + "resources"
     resources_path = os.path.join(os.getcwd(), "resources")
 

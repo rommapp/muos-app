@@ -258,7 +258,7 @@ class API:
                         or platform_slug in self._exclude_platforms
                     ):
                         continue
-                
+
                 _platforms.append(
                     Platform(
                         id=platform["id"],

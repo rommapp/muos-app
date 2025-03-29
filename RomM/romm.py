@@ -13,6 +13,7 @@ from glyps import glyphs
 from input import Input
 from status import Filter, StartMenuOptions, Status, View
 
+
 class RomM:
     spinner_speed = 0.05
     start_menu_options = [
