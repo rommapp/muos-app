@@ -19,19 +19,14 @@ cp "${ROOT_DIR}/resources/romm.png" "${ICON_DIR}/romm.png"
 # Copy app fonts
 mkdir -p "${FONTS_DIR}"
 cp "${ROOT_DIR}/fonts/romm.ttf" "${FONTS_DIR}/romm.ttf"
-
-# Ensure pip is installed
-command -v pip3 >/dev/null || python3 -m ensurepip --default-pip
-
-# Install dependencies if missing
-python3 -c "import PIL" 2>/dev/null || pip3 install --no-cache-dir pillow
-python3 -c "import dotenv" 2>/dev/null || pip3 install --no-cache-dir python-dotenv
-
 cd "${ROOT_DIR}" || exit
 
-LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
+export PYSDL2_DLL_PATH="/usr/lib"
+export LD_LIBRARY_PATH="${ROOT_DIR}/libs:${LD_LIBRARY_PATH}"
+export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
 
-python3 romm.py >"${LOG_FILE}" 2>&1
+LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
+python3 main.py >"${LOG_FILE}" 2>&1
 
 SCREEN_TYPE="internal"
 DEVICE_MODE="$(GET_VAR "global" "boot/device_mode")"
