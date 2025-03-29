@@ -1,16 +1,16 @@
 import os
 import sys
 
-import sdl2
-
 # Add the PIL and dotenv dependencies to the path
 base_path = os.path.dirname(os.path.abspath(__file__))
-libs_path = os.path.join(base_path, "dependencies")
+libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
 
 def main():
     import ui
+    import sdl2
+
     from romm import RomM
 
     # Initialize SDL2 with video and game controller support

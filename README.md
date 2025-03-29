@@ -20,7 +20,7 @@
 
 # Overview
 
-An app for CFWs that connects to your RomM instance and allows you to fetch games wirelessly from your Anbernic device.
+An app for CFWs that connects to your RomM instance and allows you to fetch games wirelessly from your handheld device.
 
 ## Screenshots
 
@@ -31,10 +31,8 @@ An app for CFWs that connects to your RomM instance and allows you to fetch game
 
 ## Installation
 
-- EmulationStation users will add the `RomM App.sh` and `romM` folder to your client in `roms/ports`.
-- muOS users will add the `RomM App.sh` file to `mnt/mmc/ROMS/PORTS` or `mnt/sdcard/ROMS/PORTS` and then add the `RomM` folder to the associated `ports` directory.
-
-PIL, dotenv, and PySDL2 are bundled with the package so as long as you have Python and an internet connection (as well as a `RomM Server` to connect to) it will work out of the box! Modify `env-template` or `.env` inside the `romM` folder.
+- EmulationStation users will add the `RomM App.sh` and `RomM` folder to your client in `roms/ports`.
+TODO: add instructions for muOS
 
 ## Support
 

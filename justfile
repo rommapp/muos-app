@@ -36,7 +36,7 @@ build:
 	@echo "Copying Python dependencies..."
 
 	uv pip freeze > .build/requirements.txt
-	uv pip install --requirements .build/requirements.txt --upgrade --target=.build/RomM/dependencies
+	pip install --no-cache-dir --platform manylinux_2_28_aarch64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
 	rm .build/requirements.txt
 
 zip:
