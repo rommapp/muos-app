@@ -6,7 +6,9 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
+# trunk-ignore(ruff/E402)
 import sdl2
+# trunk-ignore(ruff/E402)
 from dotenv import load_dotenv
 
 # Load .env file from one folder above

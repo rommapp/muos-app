@@ -6,12 +6,12 @@ import platform_maps
 from models import Rom
 
 
-def _get_muos_parent_path(file_path) -> Optional[Path]:
+def _get_muos_parent_path(file_path) -> Optional[str]:
     path = Path(file_path).resolve()
 
     while path != Path('/'):
         if path.name == 'MUOS':
-            return path.parent
+            return str(path.parent)
         path = path.parent
 
     return None
@@ -25,7 +25,7 @@ class Filesystem:
     is_muos = _muos_parent_path is not None
     
     # Set the base path
-    if is_muos:
+    if _muos_parent_path:
         _base_path = _muos_parent_path
     else:
         # Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)

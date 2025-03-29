@@ -30,9 +30,48 @@ color_gray_2 = "#141414"
 active_image: Image.Image
 active_draw: ImageDraw.ImageDraw
 
+
+class SDL2Backend:
+    def __init__(self, width: int, height: int):
+        self.width = width
+        self.height = height
+        self.window = None
+        self.renderer = None
+
+    def start(self):
+        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) < 0:
+            raise RuntimeError(f"SDL2 init failed: {sdl2.SDL_GetError()}")
+        self.window = sdl2.SDL_CreateWindow(
+            b"Retro UI",
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            self.width,
+            self.height,
+            sdl2.SDL_WINDOW_SHOWN,
+        )
+        if not self.window:
+            raise RuntimeError(f"Window creation failed: {sdl2.SDL_GetError()}")
+        self.renderer = sdl2.SDL_CreateRenderer(
+            self.window,
+            -1,
+            sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC,
+        )
+        if not self.renderer:
+            raise RuntimeError(f"Renderer creation failed: {sdl2.SDL_GetError()}")
+        print("SDL2 backend started")
+
+    def end(self):
+        if self.renderer:
+            sdl2.SDL_DestroyRenderer(self.renderer)
+        if self.window:
+            sdl2.SDL_DestroyWindow(self.window)
+        sdl2.SDL_Quit()
+        print("SDL2 backend closed.")
+
+
 fs = Filesystem()
 status = Status()
-backend = None
+backend: SDL2Backend | None = None
 
 
 def query_display():
@@ -465,41 +504,3 @@ def draw_menu_background(
         fill=color_gray_2,
         outline=color_violet,
     )
-
-
-class SDL2Backend:
-    def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-        self.window = None
-        self.renderer = None
-
-    def start(self):
-        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) < 0:
-            raise RuntimeError(f"SDL2 init failed: {sdl2.SDL_GetError()}")
-        self.window = sdl2.SDL_CreateWindow(
-            b"Retro UI",
-            sdl2.SDL_WINDOWPOS_UNDEFINED,
-            sdl2.SDL_WINDOWPOS_UNDEFINED,
-            self.width,
-            self.height,
-            sdl2.SDL_WINDOW_SHOWN,
-        )
-        if not self.window:
-            raise RuntimeError(f"Window creation failed: {sdl2.SDL_GetError()}")
-        self.renderer = sdl2.SDL_CreateRenderer(
-            self.window,
-            -1,
-            sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC,
-        )
-        if not self.renderer:
-            raise RuntimeError(f"Renderer creation failed: {sdl2.SDL_GetError()}")
-        print("SDL2 backend started")
-
-    def end(self):
-        if self.renderer:
-            sdl2.SDL_DestroyRenderer(self.renderer)
-        if self.window:
-            sdl2.SDL_DestroyWindow(self.window)
-        sdl2.SDL_Quit()
-        print("SDL2 backend closed.")
