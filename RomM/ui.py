@@ -1,11 +1,11 @@
 import os
 import shutil
 import time
+from typing import Optional
 
 import sdl2
 import sdl2.ext
 import sdl2.sdlimage
-from typing import Optional
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom

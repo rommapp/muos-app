@@ -18,8 +18,8 @@ sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1
 
 
 def main():
-    import ui
     from romm import RomM
+    from ui import UserInterface
 
     # Initialize SDL2 with video and game controller support
     if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_GAMECONTROLLER) < 0:
@@ -28,6 +28,7 @@ def main():
     sdl2.SDL_GameControllerEventState(sdl2.SDL_ENABLE)
 
     # Setup the UI
+    ui = UserInterface()
     ui.query_display()
     ui.draw_start()
     ui.screen_reset()

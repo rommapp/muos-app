@@ -11,7 +11,15 @@ from filesystem import Filesystem
 from glyps import glyphs
 from input import Input
 from status import Filter, StartMenuOptions, Status, View
-from ui import UserInterface
+from ui import (
+    UserInterface,
+    color_blue,
+    color_gray_1,
+    color_green,
+    color_red,
+    color_violet,
+    color_yellow,
+)
 
 
 class RomM:
@@ -78,9 +86,7 @@ class RomM:
             )
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                self.ui.draw_loader(
-                    self.status.extracted_percent, color=self.ui.color_yellow
-                )
+                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
@@ -96,20 +102,20 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=self.ui.color_red,
+                text_color=color_red,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", text_color=self.ui.color_red
+                text_line_1="Error: Permission denied", text_color=color_red
             )
             self.status.valid_credentials = True
         else:
             self.ui.button_circle(
-                (self.button_positions[0]), "A", "Select", color=self.ui.color_red
+                (self.button_positions[0]), "A", "Select", color=color_red
             )
             self.ui.button_circle(
-                (self.button_positions[1]), "Y", "Refresh", color=self.ui.color_green
+                (self.button_positions[1]), "Y", "Refresh", color=color_green
             )
             self.ui.button_circle(
                 (self.button_positions[2]),
@@ -119,7 +125,7 @@ class RomM:
                     if self.status.current_view == View.PLATFORMS
                     else "Platforms"
                 ),
-                color=self.ui.color_blue,
+                color=color_blue,
             )
 
     def _update_platforms_view(self):
@@ -166,7 +172,7 @@ class RomM:
             self.collections_selected_position,
             self.max_n_collections,
             self.status.collections,
-            fill=self.ui.color_yellow,
+            fill=color_yellow,
         )
         if not self.status.collections_ready.is_set():
             current_time = time.time()
@@ -178,9 +184,7 @@ class RomM:
             )
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                self.ui.draw_loader(
-                    self.status.extracted_percent, color=self.ui.color_yellow
-                )
+                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
@@ -196,20 +200,20 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=self.ui.color_red,
+                text_color=color_red,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", text_color=self.ui.color_red
+                text_line_1="Error: Permission denied", text_color=color_red
             )
             self.status.valid_credentials = True
         else:
             self.ui.button_circle(
-                (self.button_positions[0]), "A", "Select", color=self.ui.color_red
+                (self.button_positions[0]), "A", "Select", color=color_red
             )
             self.ui.button_circle(
-                (self.button_positions[1]), "Y", "Refresh", color=self.ui.color_green
+                (self.button_positions[1]), "Y", "Refresh", color=color_green
             )
             self.ui.button_circle(
                 (self.button_positions[2]),
@@ -219,7 +223,7 @@ class RomM:
                     if self.status.current_view == View.PLATFORMS
                     else "Platforms"
                 ),
-                color=self.ui.color_blue,
+                color=color_blue,
             )
 
     def _update_collections_view(self):
@@ -270,13 +274,13 @@ class RomM:
             header_text = self.status.platforms[
                 self.platforms_selected_position
             ].display_name
-            header_color = self.ui.color_violet
+            header_color = color_violet
             prepend_platform_slug = False
         elif self.status.selected_collection or self.status.selected_virtual_collection:
             header_text = self.status.collections[
                 self.collections_selected_position
             ].name
-            header_color = self.ui.color_yellow
+            header_color = color_yellow
             prepend_platform_slug = True
         total_pages = (
             len(self.status.roms_to_show) + self.max_n_roms - 1
@@ -310,9 +314,7 @@ class RomM:
             self.ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching roms")
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                self.ui.draw_loader(
-                    self.status.extracted_percent, color=self.ui.color_yellow
-                )
+                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
@@ -328,29 +330,29 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=self.ui.color_red,
+                text_color=color_red,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", text_color=self.ui.color_red
+                text_line_1="Error: Permission denied", text_color=color_red
             )
             self.status.valid_credentials = True
         else:
             self.ui.button_circle(
-                (self.button_positions[0]), "A", "Download", color=self.ui.color_red
+                (self.button_positions[0]), "A", "Download", color=color_red
             )
             self.ui.button_circle(
-                (self.button_positions[1]), "B", "Back", color=self.ui.color_yellow
+                (self.button_positions[1]), "B", "Back", color=color_yellow
             )
             self.ui.button_circle(
-                (self.button_positions[2]), "Y", "Refresh", color=self.ui.color_green
+                (self.button_positions[2]), "Y", "Refresh", color=color_green
             )
             self.ui.button_circle(
                 (self.button_positions[3]),
                 "X",
                 f"Filter: {self.status.current_filter}",
-                color=self.ui.color_blue,
+                color=color_blue,
             )
             self.ui.button_circle(
                 (self.button_positions[4]),
@@ -362,7 +364,7 @@ class RomM:
                     >= len(self.status.roms_to_show)
                     else "Select all"
                 ),
-                color=self.ui.color_gray_1,
+                color=color_gray_1,
             )
 
     def _update_roms_view(self):
@@ -592,12 +594,12 @@ class RomM:
                 if new == current:
                     self.ui.draw_log(
                         text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
-                        text_color=self.ui.color_red,
+                        text_color=color_red,
                     )
                 else:
                     self.ui.draw_log(
                         text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
-                        text_color=self.ui.color_green,
+                        text_color=color_green,
                     )
                 self.input.reset_input()
             elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
@@ -653,12 +655,12 @@ class RomM:
                     threading.Thread(target=self.api.fetch_platforms).start()
                 self.input.reset_input()
             self.ui.button_circle(
-                (self.button_positions[0]), "Y", "Refresh", color=self.ui.color_green
+                (self.button_positions[0]), "Y", "Refresh", color=color_green
             )
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 f"Error: Can't connect to host\n{self.api.host}",
-                color=self.ui.color_red,
+                color=color_red,
                 anchor="mm",
             )
         elif not self.status.valid_credentials:
@@ -668,12 +670,12 @@ class RomM:
                     threading.Thread(target=self.api.fetch_platforms).start()
                 self.input.reset_input()
             self.ui.button_circle(
-                (self.button_positions[0]), "Y", "Refresh", color=self.ui.color_green
+                (self.button_positions[0]), "Y", "Refresh", color=color_green
             )
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 "Error: Permission denied",
-                color=self.ui.color_red,
+                color=color_red,
                 anchor="mm",
             )
         else:
