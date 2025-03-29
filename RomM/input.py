@@ -1,5 +1,7 @@
 import os
 import sys
+from threading import Lock
+from typing import Optional
 
 portmaster_base = "/storage/roms/ports/PortMaster"
 pylibs_path = os.path.join(portmaster_base, "pylibs")
@@ -15,8 +17,6 @@ except ModuleNotFoundError as e:
     print(f"Failed to import sdl2: {e}")
     sys.exit(1)
 
-from threading import Lock
-from typing import Optional
 
 class Input:
     _instance: Optional["Input"] = None

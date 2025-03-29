@@ -20,7 +20,7 @@
 
 # Overview
 
-This is a retro handheld app that connects to your RomM Host instance and allows you to fetch games wirelessly from your retro handheld device.
+An app for CFWs that connects to your RomM instance and allows you to fetch games wirelessly from your Anbernic device.
 
 ## Screenshots
 
@@ -46,6 +46,44 @@ If you have any issues with the app, please [open an issue](https://github.com/r
 Join us on Discord, where you can ask questions, submit ideas, get help, showcase your collection, and discuss RomM with other users. You can also find our team is the [muOS Discord](https://discord.com/invite/muos).
 
 [![discord-invite]][discord-invite-url]
+
+## Contributing
+
+We use `uv` to manage python dependencies, install it with:
+
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+And activate it:
+
+```sh
+uv venv
+source .venv/bin/activate
+```
+
+Then install python and the required dependencies:
+
+```sh
+uv python install
+uv sync --all-extras --dev
+```
+
+To build the app, you'll need to [install `just`](https://github.com/casey/just?tab=readme-ov-file#packages), then run:
+
+```sh
+just build
+```
+
+Just can also push the app to your device, but you need to set up an `.env` file with your device's IP and SSH credentials. Create a file called `.env` in the root of the project and add the following:
+
+```env
+DEVICE_IP_ADDRESS=
+PRIVATE_KEY_PATH=
+SSH_PASSWORD=
+```
+
+Then run `just`, which will clean, build and push the app to your device.
 
 <!-- Badges -->
 

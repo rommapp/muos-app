@@ -1,52 +1,43 @@
 import os
-import time
-import sys
 import shutil
-from typing import Optional, Tuple, List, Dict, Any
+import sys
+import time
 
-# Redirect stdout to log file
-sys.stdout = open('log.txt', 'w', buffering=1)
-
-# Add the PIL and dotenv dependencies to the path
-base_path = os.path.dirname(os.path.abspath(__file__))
-
-# Add the PIL and dotenv dependencies to the path
-base_path = os.path.dirname(os.path.abspath(__file__))
-libs_path = os.path.join(base_path, "deps")
-sys.path.insert(0, libs_path)
-    
-from PIL import Image, ImageDraw, ImageFont
 import sdl2
 import sdl2.ext
 import sdl2.sdlimage
-    
 from filesystem import Filesystem
 from glyps import glyphs
+from PIL import Image, ImageDraw, ImageFont
 from status import Status
 
-screen_width = 0 
-screen_height = 0 
+# Redirect stdout to log file
+sys.stdout = open("log.txt", "w", buffering=1)
+
+screen_width = 0
+screen_height = 0
 bytes_per_pixel = 4
 screen_size = 0
 
-fontFile = {}
-fontFile[15] = ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 16)
+font_file = {}
+font_file[15] = ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 16)
 
-colorViolet = "#ad3c6b"
-colorGreen = "#41aa3b"
-colorDarkGreen = "#3d6b39"
-colorRed = "#3c3cad"
-colorBlue = "#bb7200"
-colorYellow = "#3b80aa"
-colorGrayL1 = "#383838"
-colorGrayD2 = "#141414"
+color_violet = "#ad3c6b"
+color_green = "#41aa3b"
+color_dark_green = "#3d6b39"
+color_red = "#3c3cad"
+color_blue = "#bb7200"
+color_yellow = "#3b80aa"
+color_gray_1 = "#383838"
+color_gray_2 = "#141414"
 
-activeImage: Image.Image
-activeDraw: ImageDraw.ImageDraw
+active_image: Image.Image
+active_draw: ImageDraw.ImageDraw
 
 fs = Filesystem()
 status = Status()
 backend = None
+
 
 def query_display():
     """Query the display resolution using SDL2."""
@@ -66,36 +57,46 @@ def query_display():
         sdl2.SDL_Quit()  # Clean up init for now; draw_start will re-init
     screen_size = screen_width * screen_height * bytes_per_pixel
 
+
 def screen_reset():
     if backend and backend.renderer:
         sdl2.SDL_RenderClear(backend.renderer)
         sdl2.SDL_RenderPresent(backend.renderer)
+
 
 def draw_start():
     global backend
     backend = SDL2Backend(screen_width, screen_height)
     backend.start()
 
+
 def draw_end():
     global backend
     if backend:
         backend.end()
 
+
 def crate_image():
     return Image.new("RGBA", (screen_width, screen_height), color="black")
 
+
 def draw_active(image):
-    global activeImage, activeDraw
-    activeImage = image
-    activeDraw = ImageDraw.Draw(activeImage)
+    global active_image, active_draw
+    active_image = image
+    active_draw = ImageDraw.Draw(active_image)
+
 
 def draw_update():
-    global backend, activeImage
-    if backend and activeImage:
-        rgba_data = activeImage.tobytes()
+    global backend, active_image
+    if backend and active_image:
+        rgba_data = active_image.tobytes()
         surface = sdl2.SDL_CreateRGBSurfaceWithFormatFrom(
-            rgba_data, screen_width, screen_height, 32, screen_width * 4,
-            sdl2.SDL_PIXELFORMAT_RGBA32
+            rgba_data,
+            screen_width,
+            screen_height,
+            32,
+            screen_width * 4,
+            sdl2.SDL_PIXELFORMAT_RGBA32,
         )
         if not surface:
             print(f"Surface creation failed: {sdl2.SDL_GetError()}")
@@ -110,17 +111,22 @@ def draw_update():
         sdl2.SDL_RenderPresent(backend.renderer)
         sdl2.SDL_DestroyTexture(texture)
 
+
 def draw_clear():
-    activeDraw.rectangle([0, 0, screen_width, screen_height], fill="black")
+    active_draw.rectangle([0, 0, screen_width, screen_height], fill="black")
+
 
 def draw_text(position, text, font=15, color="white", **kwargs):
-    activeDraw.text(position, text, font=fontFile[font], fill=color, **kwargs)
+    active_draw.text(position, text, font=font_file[font], fill=color, **kwargs)
+
 
 def draw_rectangle(position, fill=None, outline=None, width=1):
-    activeDraw.rectangle(position, fill=fill, outline=outline, width=width)
+    active_draw.rectangle(position, fill=fill, outline=outline, width=width)
+
 
 def draw_rectangle_r(position, radius, fill=None, outline=None):
-    activeDraw.rounded_rectangle(position, radius, fill=fill, outline=outline)
+    active_draw.rounded_rectangle(position, radius, fill=fill, outline=outline)
+
 
 def row_list(
     text,
@@ -128,7 +134,7 @@ def row_list(
     width,
     height,
     selected,
-    fill=colorViolet,
+    fill=color_violet,
     outline=None,
     append_icon_path=None,
 ):
@@ -142,21 +148,22 @@ def row_list(
     draw_rectangle_r(
         [pos[0], pos[1], pos[0] + width, pos[1] + height],
         radius,
-        fill=(fill if selected else colorGrayL1),
+        fill=(fill if selected else color_gray_1),
         outline=outline,
     )
     if icon:
         margin_left_icon = 10
         margin_top_icon = 5
-        activeImage.paste(
+        active_image.paste(
             icon,
             (pos[0] + margin_left_icon, pos[1] + margin_top_icon),
             mask=icon if icon.mode == "RGBA" else None,
         )
     draw_text((pos[0] + margin_left_text, pos[1] + margin_top_text), text)
 
+
 def draw_circle(position, radius, fill=None, outline="white"):
-    activeDraw.ellipse(
+    active_draw.ellipse(
         [
             position[0] - radius,
             position[1] - radius,
@@ -167,7 +174,8 @@ def draw_circle(position, radius, fill=None, outline="white"):
         outline=outline,
     )
 
-def button_circle(pos, button, text, color=colorViolet):
+
+def button_circle(pos, button, text, color=color_violet):
     radius = 10
     btn_text_offset = 1
     label_margin_l = 20
@@ -176,6 +184,7 @@ def button_circle(pos, button, text, color=colorViolet):
     draw_text(
         (pos[0] + label_margin_l, pos[1] + btn_text_offset), text, font=15, anchor="lm"
     )
+
 
 def draw_log(
     text_line_1="",
@@ -232,7 +241,8 @@ def draw_log(
             color=text_color,
         )
 
-def draw_loader(percent, color=colorDarkGreen):
+
+def draw_loader(percent, color=color_dark_green):
     margin = 10
     margin_top = 38
     margin_bottom = 4
@@ -249,21 +259,22 @@ def draw_loader(percent, color=colorDarkGreen):
         outline=None,
     )
 
+
 def draw_header(host, username):
     username = username if len(username) <= 22 else username[:19] + "..."
     logo = Image.open(os.path.join(os.getcwd(), "resources/romm.png"))
     pos_logo = [15, 7]
     pos_text = [55, 9]
-    activeImage.paste(
+    active_image.paste(
         logo, (pos_logo[0], pos_logo[1]), mask=logo if logo.mode == "RGBA" else None
     )
-    
+
     roms_path = fs.get_roms_storage_path()
     total, used, free = shutil.disk_usage(roms_path)
 
     # Convert to GB
-    total_gb = total / (1024 ** 3)
-    used_gb = used / (1024 ** 3)
+    total_gb = total / (1024**3)
+    used_gb = used / (1024**3)
 
     # Calculate percentage
     used_percentage = (used / total) * 100
@@ -271,7 +282,7 @@ def draw_header(host, username):
     draw_text(
         (pos_text[0], pos_text[1]),
         f"{glyphs.host} {host} | {glyphs.user} {username}\n"
-        f"{glyphs.microsd} {roms_path} ({used_gb:.1f}/{total_gb:.1f} GB, {used_percentage:.1f}% used)"
+        f"{glyphs.microsd} {roms_path} ({used_gb:.1f}/{total_gb:.1f} GB, {used_percentage:.1f}% used)",
     )
     if status.profile_pic_path:
         profile_pic = Image.open(status.profile_pic_path)
@@ -281,16 +292,22 @@ def draw_header(host, username):
             screen_width - margin_right_profile_pic,
             margin_top_profile_pic,
         ]
-        activeImage.paste(
+        active_image.paste(
             profile_pic,
             (pos_profile_pic[0], pos_profile_pic[1]),
             mask=profile_pic if profile_pic.mode == "RGBA" else None,
         )
 
+
 def draw_platforms_list(
-    platforms_selected_position, max_n_platforms, platforms, fill=colorViolet
+    platforms_selected_position, max_n_platforms, platforms, fill=color_violet
 ):
-    draw_rectangle_r([10, 70, screen_width - 10, screen_height - 43], 5, fill=colorGrayD2, outline=None)
+    draw_rectangle_r(
+        [10, 70, screen_width - 10, screen_height - 43],
+        5,
+        fill=color_gray_2,
+        outline=None,
+    )
     start_idx = int(platforms_selected_position / max_n_platforms) * max_n_platforms
     end_idx = start_idx + max_n_platforms
     for i, p in enumerate(platforms[start_idx:end_idx]):
@@ -310,10 +327,16 @@ def draw_platforms_list(
             append_icon_path=f"{fs.resources_path}/{p.slug}.ico",
         )
 
+
 def draw_collections_list(
-    collections_selected_position, max_n_collections, collections, fill=colorViolet
+    collections_selected_position, max_n_collections, collections, fill=color_violet
 ):
-    draw_rectangle_r([10, 75, screen_width - 10, screen_height - 43], 5, fill=colorGrayD2, outline=None)
+    draw_rectangle_r(
+        [10, 75, screen_width - 10, screen_height - 43],
+        5,
+        fill=color_gray_2,
+        outline=None,
+    )
     start_idx = (
         int(collections_selected_position / max_n_collections) * max_n_collections
     )
@@ -346,6 +369,7 @@ def draw_collections_list(
             fill=fill,
         )
 
+
 def draw_roms_list(
     roms_selected_position,
     max_n_roms,
@@ -355,48 +379,55 @@ def draw_roms_list(
     multi_selected_roms,
     prepend_platform_slug=False,
 ):
-    draw_rectangle_r([10, 50, screen_width - 10, 100], 5, outline=colorGrayD2)
+    draw_rectangle_r([10, 50, screen_width - 10, 100], 5, outline=color_gray_2)
     draw_text(
         (screen_width / 2, 60),
         header_text,
         color=header_color,
         anchor="mm",
     )
-    draw_rectangle_r([10, 70, screen_width - 10, screen_height - 43], 0, fill=colorGrayD2, outline=None)
+    draw_rectangle_r(
+        [10, 70, screen_width - 10, screen_height - 43],
+        0,
+        fill=color_gray_2,
+        outline=None,
+    )
     start_idx = int(roms_selected_position / max_n_roms) * max_n_roms
     end_idx = min(start_idx + max_n_roms, len(roms))
-    
+
     # Adjust max text length to reserve space for file size and padding
     padding = 4  # Additional padding in characters
-    max_len_text = int((screen_width - 71) / 11) - (4 if prepend_platform_slug else 0) - padding
+    max_len_text = (
+        int((screen_width - 71) / 11) - (4 if prepend_platform_slug else 0) - padding
+    )
 
     for i, r in enumerate(roms[start_idx:end_idx]):
         is_selected = i == (roms_selected_position % max_n_roms)
         is_in_device = fs.is_rom_in_device(r)
         sync_flag_text = f"{glyphs.cloud_sync}" if is_in_device else ""
-        
+
         # Build base row text
         row_text = r.name
         row_text += f" ({','.join(r.languages)})" if r.languages else ""
         row_text += f" ({','.join(r.regions)})" if r.regions else ""
         row_text += f" ({','.join(r.revision)})" if r.revision else ""
         row_text += f" ({','.join(r.tags)})" if r.tags else ""
-        
+
         # Handle text scrolling
         if len(row_text) > max_len_text:
             row_text = row_text + " "
             shift_offset = (int(time.time() * 2)) % len(row_text)
             row_text = row_text[shift_offset:] + row_text[:shift_offset]
-        
+
         # Truncate base text and append file size with padding
         size_text = f"[{r.fs_size[0]}{r.fs_size[1]}] {sync_flag_text}"
         if len(row_text) > max_len_text:
             row_text = row_text[:max_len_text]
         row_text = f"{row_text} {size_text}"
-        
+
         # Add checkbox
         row_text = f"{glyphs.checkbox_selected if r in multi_selected_roms else glyphs.checkbox} {row_text}"
-        
+
         row_list(
             row_text,
             (20, 80 + (i * 35)),
@@ -411,6 +442,7 @@ def draw_roms_list(
                 else ""
             ),
         )
+
 
 def draw_menu_background(
     pos,
@@ -434,9 +466,10 @@ def draw_menu_background(
             + extra_bottom_offset,
         ],
         5,
-        fill=colorGrayD2,
-        outline=colorViolet,
+        fill=color_gray_2,
+        outline=color_violet,
     )
+
 
 class SDL2Backend:
     def __init__(self, width: int, height: int):
@@ -450,14 +483,18 @@ class SDL2Backend:
             raise RuntimeError(f"SDL2 init failed: {sdl2.SDL_GetError()}")
         self.window = sdl2.SDL_CreateWindow(
             b"Retro UI",
-            sdl2.SDL_WINDOWPOS_UNDEFINED, sdl2.SDL_WINDOWPOS_UNDEFINED,
-            self.width, self.height,
-            sdl2.SDL_WINDOW_SHOWN
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            self.width,
+            self.height,
+            sdl2.SDL_WINDOW_SHOWN,
         )
         if not self.window:
             raise RuntimeError(f"Window creation failed: {sdl2.SDL_GetError()}")
         self.renderer = sdl2.SDL_CreateRenderer(
-            self.window, -1, sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC
+            self.window,
+            -1,
+            sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC,
         )
         if not self.renderer:
             raise RuntimeError(f"Renderer creation failed: {sdl2.SDL_GetError()}")
@@ -470,6 +507,7 @@ class SDL2Backend:
             sdl2.SDL_DestroyWindow(self.window)
         sdl2.SDL_Quit()
         print("SDL2 backend closed.")
+
 
 # Query display and initialize
 query_display()

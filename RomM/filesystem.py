@@ -1,8 +1,9 @@
 import os
-import platform_maps
 from typing import Optional
 
+import platform_maps
 from models import Rom
+
 
 class Filesystem:
     _instance: Optional["Filesystem"] = None
@@ -12,11 +13,13 @@ class Filesystem:
     resources_path = os.path.join(os.getcwd(), "resources")
     # Check if running on muOS
     _is_muOS = os.path.exists(os.path.join(_base_path, "MUOS"))
-    
+
     # ROMs storage path: Default to ../../ (the roms directory), overridable via environment variable
     # If running on muOS, change the path
     if _is_muOS:
-        _roms_storage_path = os.path.join(_base_path, "ROMS")  # You can adjust the path as needed
+        _roms_storage_path = os.path.join(
+            _base_path, "ROMS"
+        )  # You can adjust the path as needed
     else:
         _roms_storage_path = os.environ.get("ROMS_STORAGE_PATH", _base_path)
 
@@ -37,18 +40,20 @@ class Filesystem:
     def get_storage_platform_path(self, platform: str) -> str:
         """Return the platform-specific storage path, using MUOS mapping if on muOS,
         or using ES mapping if available."""
-        
+
         # First check if the platform has an entry in the ES map
         platform_dir = platform_maps._ES_FOLDER_MAP.get(platform, platform)
-        
+
         # If the ES map returns a tuple, use the first element of the tuple
         if isinstance(platform_dir, tuple):
             platform_dir = platform_dir[0]
-        
+
         # If running on muOS, override the platform_dir with the MUOS mapping
         if self._is_muOS:
-            platform_dir = platform_maps.MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(platform, platform_dir)
-        
+            platform_dir = platform_maps.MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(
+                platform, platform_dir
+            )
+
         # Return the final path using the appropriate platform directory
         return os.path.join(self._roms_storage_path, platform_dir)
 

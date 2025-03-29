@@ -6,7 +6,6 @@
 - Test extended features to verify working order (buttons may have been missed, missing menu w/ platform info, etc).
 - SD is hardcoded based on where romM client was run (backs out two directories). Regain ability to choose SD2.
 - GPTOKEYB enviroment variable is still used, which is a PortMaster dependency. Either bundle gptokeyb with the package or implement SDL2 gamecontrollerdb detection.
-
 - Scale font and buttons better for high dpi displays such as the Retroid Pocket Mini (3.7" AMOLED 1280x960).
 
 ## Ideas
