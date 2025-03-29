@@ -44,6 +44,8 @@ class API:
         self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
         self._download_assets = str_to_bool(os.getenv("DOWNLOAD_ASSETS", "false"))
         self._fullscreen_assets = str_to_bool(os.getenv("FULLSCREEN_ASSETS", "false"))
+        self._download_existing_roms = str_to_bool(os.getenv("DOWNLOAD_EXISTING_ROMS", "true"))
+        
         self._status = Status()
         self._file_system = Filesystem()
         self._image_utils = ImageUtils(640, 480)
@@ -549,7 +551,7 @@ class API:
 
             is_in_device = self._file_system.is_rom_in_device(rom)
 
-            if not is_in_device: 
+            if self._download_existing_roms or not is_in_device: 
 
                 try:
                     platform_dir = self._file_system.get_sd_storage_platform_path(
