@@ -73,9 +73,9 @@ class ImageUtils:
         if fullscreen:
             if preview:
                 background = preview
-                background.putalpha(self.fade_mask)
             else:  
                 background = Image.new('RGBA', (final_width, final_height), (0, 0, 0, 0))
+            background.putalpha(self.fade_mask)
 
         foreground = self.load_image_from_url(cover_url, headers) if cover_url else None
 
