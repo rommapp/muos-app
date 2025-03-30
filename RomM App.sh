@@ -20,6 +20,8 @@ get_controls
 
 GAMEDIR="/${directory}/ports/RomM"
 
+cd $GAMEDIR
+
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
@@ -27,7 +29,7 @@ export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
 # Run the app
 ${GPTOKEYB} "python" -c "config/romm.gptk" &
 pm_platform_helper "python" >dev/null
-python main.py >"${LOG_FILE}" 2>&1
+python main.py
 
 # Cleanup
 pm_finish

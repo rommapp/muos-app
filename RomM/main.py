@@ -14,7 +14,9 @@ from dotenv import load_dotenv
 
 # Load .env file from one folder above
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
+log_file_path = "./logs/log.txt"
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+sys.stdout = open(log_file_path, "w", buffering=1)
 
 
 def main():
