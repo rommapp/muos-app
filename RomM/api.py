@@ -58,8 +58,14 @@ class API:
         return (s, size_name[i])
 
     def _sanitize_filename(self, filename: str) -> str:
-        invalid_chars = r"[\/\\\*\?\"|\<\>:\t\n\r\b]"
-        return re.sub(invalid_chars, "_", filename)
+        path_parts = os.path.normpath(filename).split(os.sep)
+        sanitized_parts = []
+
+        for _i, part in enumerate(path_parts):
+            sanitized = re.sub(r'[\\/*?:"<>|\t\n\r\b]', "_", part)
+            sanitized_parts.append(sanitized)
+
+        return os.path.join(*sanitized_parts)
 
     def _fetch_user_profile_picture(self, avatar_path: str) -> None:
         fs_extension = avatar_path.split(".")[-1]
