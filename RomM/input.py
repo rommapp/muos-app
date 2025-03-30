@@ -68,7 +68,6 @@ class Input:
         self._last_repeat_time: Dict[str, float] = {}
 
         # Enable joystick events
-        sdl2.SDL_Init(sdl2.SDL_INIT_JOYSTICK)
         sdl2.SDL_JoystickEventState(sdl2.SDL_ENABLE)
 
         # Open joysticks

@@ -3,53 +3,13 @@ import shutil
 import time
 from typing import Optional
 
-import sdl2
-import sdl2.ext
-import sdl2.sdlimage
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
 
-
-class SDL2Backend:
-    def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-        self.window = None
-        self.renderer = None
-
-    def start(self):
-        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) < 0:
-            raise RuntimeError(f"SDL2 init failed: {sdl2.SDL_GetError()}")
-        self.window = sdl2.SDL_CreateWindow(
-            b"Retro UI",
-            sdl2.SDL_WINDOWPOS_UNDEFINED,
-            sdl2.SDL_WINDOWPOS_UNDEFINED,
-            self.width,
-            self.height,
-            sdl2.SDL_WINDOW_SHOWN,
-        )
-        if not self.window:
-            raise RuntimeError(f"Window creation failed: {sdl2.SDL_GetError()}")
-        self.renderer = sdl2.SDL_CreateRenderer(
-            self.window,
-            -1,
-            sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC,
-        )
-        if not self.renderer:
-            raise RuntimeError(f"Renderer creation failed: {sdl2.SDL_GetError()}")
-        print("SDL2 backend started")
-
-    def end(self):
-        if self.renderer:
-            sdl2.SDL_DestroyRenderer(self.renderer)
-        if self.window:
-            sdl2.SDL_DestroyWindow(self.window)
-        sdl2.SDL_Quit()
-        print("SDL2 backend closed.")
-
+fontFile = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 15)}
 
 color_violet = "#ad3c6b"
 color_green = "#41aa3b"
@@ -66,92 +26,49 @@ class UserInterface:
 
     fs = Filesystem()
     status = Status()
-    backend: SDL2Backend | None = None
 
-    screen_width = 0
-    screen_height = 0
-    bytes_per_pixel = 4
-    screen_size = 0
+    screen_width = 640
+    screen_height = 480
+    font_file = fontFile
 
-    font_file = {
-        15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 16)
-    }
+    activeImage: Image.Image
+    activeDraw: ImageDraw.ImageDraw
 
-    active_image: Image.Image
-    active_draw: ImageDraw.ImageDraw
+    def __init__(self):
+        self.activeImage = self.create_image()
+        self.activeDraw = ImageDraw.Draw(self.activeImage)
 
     def __new__(cls):
         if not cls._instance:
             cls._instance = super(UserInterface, cls).__new__(cls)
         return cls._instance
 
-    def query_display(self):
-        """Query the display resolution using SDL2."""
-        if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) < 0:
-            print(f"SDL2 init failed for display query: {sdl2.SDL_GetError()}")
-            # Fallback to default resolution
-            self.screen_width, self.screen_height = 640, 480
-        else:
-            display_index = 0  # Use primary display
-            rect = sdl2.SDL_Rect()
-            if sdl2.SDL_GetDisplayBounds(display_index, rect) == 0:
-                self.screen_width = rect.w
-                self.screen_height = rect.h
-            else:
-                print(f"Failed to get display bounds: {sdl2.SDL_GetError()}")
-                # Fallback to default resolution
-                self.screen_width, self.screen_height = 640, 480
-            sdl2.SDL_Quit()  # Clean up init for now; draw_start will re-init
-
-        self.screen_size = self.screen_width * self.screen_height * self.bytes_per_pixel
-
-    def screen_reset(self):
-        if self.backend and self.backend.renderer:
-            sdl2.SDL_RenderClear(self.backend.renderer)
-            sdl2.SDL_RenderPresent(self.backend.renderer)
-
-    def draw_start(self):
-        self.backend = SDL2Backend(self.screen_width, self.screen_height)
-        self.backend.start()
-
-    def draw_end(self):
-        if self.backend:
-            self.backend.end()
-
     def create_image(self):
+        """Create a new blank RGBA image for drawing."""
         return Image.new("RGBA", (self.screen_width, self.screen_height), color="black")
 
-    def draw_active(self, image):
-        self.active_image = image
-        self.active_draw = ImageDraw.Draw(self.active_image)
+    def draw_start(self):
+        """Initialize drawing for a new frame."""
+        self.activeImage = self.create_image()
+        self.activeDraw = ImageDraw.Draw(self.activeImage)
 
-    def draw_update(self):
-        if self.backend and self.active_image:
-            rgba_data = self.active_image.tobytes()
-            surface = sdl2.SDL_CreateRGBSurfaceWithFormatFrom(
-                rgba_data,
-                self.screen_width,
-                self.screen_height,
-                32,
-                self.screen_width * 4,
-                sdl2.SDL_PIXELFORMAT_RGBA32,
-            )
-            if not surface:
-                print(f"Surface creation failed: {sdl2.SDL_GetError()}")
-                return
+    def screen_reset(self):
+        """Clear the screen to black."""
+        self.activeDraw.rectangle(
+            [0, 0, self.screen_width, self.screen_height], fill="black"
+        )
 
-            texture = sdl2.SDL_CreateTextureFromSurface(self.backend.renderer, surface)
-            sdl2.SDL_FreeSurface(surface)
-            if not texture:
-                print(f"Texture creation failed: {sdl2.SDL_GetError()}")
-                return
-            sdl2.SDL_RenderClear(self.backend.renderer)
-            sdl2.SDL_RenderCopy(self.backend.renderer, texture, None, None)
-            sdl2.SDL_RenderPresent(self.backend.renderer)
-            sdl2.SDL_DestroyTexture(texture)
+    def draw_active(self, image):  # Fixed syntax: added 'self'
+        """Set the active image and draw context."""
+        self.activeImage = image
+        self.activeDraw = ImageDraw.Draw(self.activeImage)  # Use self.activeImage
+
+    def get_image(self):
+        """Return the current image for rendering in main.py."""
+        return self.activeImage
 
     def draw_clear(self):
-        self.active_draw.rectangle(
+        self.activeDraw.rectangle(
             [0, 0, self.screen_width, self.screen_height], fill="black"
         )
 
@@ -163,7 +80,7 @@ class UserInterface:
         color: str = "white",
         **kwargs,
     ):
-        self.active_draw.text(
+        self.activeDraw.text(
             position, text, font=self.font_file[font], fill=color, **kwargs
         )
 
@@ -174,7 +91,7 @@ class UserInterface:
         outline: str | None = None,
         width: int = 1,
     ):
-        self.active_draw.rectangle(position, fill=fill, outline=outline, width=width)
+        self.activeDraw.rectangle(position, fill=fill, outline=outline, width=width)
 
     def draw_rectangle_r(
         self,
@@ -183,7 +100,7 @@ class UserInterface:
         fill: str | None = None,
         outline: str | None = None,
     ):
-        self.active_draw.rounded_rectangle(position, radius, fill=fill, outline=outline)
+        self.activeDraw.rounded_rectangle(position, radius, fill=fill, outline=outline)
 
     def row_list(
         self,
@@ -214,7 +131,7 @@ class UserInterface:
         if icon:
             margin_left_icon = 10
             margin_top_icon = 5
-            self.active_image.paste(
+            self.activeImage.paste(
                 icon,
                 (position[0] + margin_left_icon, position[1] + margin_top_icon),
                 mask=icon if icon.mode == "RGBA" else None,
@@ -231,7 +148,7 @@ class UserInterface:
         fill: str | None = None,
         outline: str | None = "white",
     ):
-        self.active_draw.ellipse(
+        self.activeDraw.ellipse(
             [
                 position[0] - radius,
                 position[1] - radius,
@@ -351,7 +268,7 @@ class UserInterface:
         logo = Image.open(os.path.join(os.getcwd(), "resources/romm.png"))
         pos_logo = [15, 7]
         pos_text = [55, 9]
-        self.active_image.paste(
+        self.activeImage.paste(
             logo, (pos_logo[0], pos_logo[1]), mask=logo if logo.mode == "RGBA" else None
         )
 
@@ -380,7 +297,7 @@ class UserInterface:
                 margin_top_profile_pic,
             ]
 
-            self.active_image.paste(
+            self.activeImage.paste(
                 profile_pic,
                 (pos_profile_pic[0], pos_profile_pic[1]),
                 mask=profile_pic if profile_pic.mode == "RGBA" else None,

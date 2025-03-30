@@ -4,7 +4,6 @@ import threading
 import time
 from typing import Any, Tuple
 
-import sdl2
 from __version__ import version
 from api import API
 from filesystem import Filesystem
@@ -44,31 +43,12 @@ class RomM:
         self.collections_selected_position = 0
         self.roms_selected_position = 0
 
-        self.max_n_platforms = (self.ui.screen_height - 130) // 35
-        self.max_n_collections = (self.ui.screen_height - 130) // 35
-        self.max_n_roms = (self.ui.screen_height - 130) // 35
-        print(f"Detected resolution: {self.ui.screen_width} x {self.ui.screen_height}")
-        print(f"Max ROMs per page: {self.max_n_roms}")
-
-        # Calculate button positions dynamically
-        self.num_buttons = 5
-        self.button_spacing = self.ui.screen_width / (
-            self.num_buttons + 1
-        )  # Divide screen into equal segments + 1 for padding
-        self.buttonsY = int(self.ui.screen_height * 0.98)  # Keep Y position consistent
-        self.button_positions = [
-            (int(self.button_spacing * i + self.button_spacing / 2), self.buttonsY)
-            for i in range(self.num_buttons)
-        ]
+        self.max_n_platforms = 11
+        self.max_n_collections = 11
+        self.max_n_roms = 10
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
-
-    def _button_pos(self, x_percent: float, y_percent: float) -> Tuple[int, int]:
-        """Calculate button position based on screen size percentages."""
-        x = int(self.ui.screen_width * x_percent)
-        y = int(self.ui.screen_height * y_percent)
-        return (x, y)
 
     def _render_platforms_view(self):
         self.ui.draw_platforms_list(
@@ -111,14 +91,10 @@ class RomM:
             )
             self.status.valid_credentials = True
         else:
+            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
+            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
             self.ui.button_circle(
-                (self.button_positions[0]), "A", "Select", color=color_red
-            )
-            self.ui.button_circle(
-                (self.button_positions[1]), "Y", "Refresh", color=color_green
-            )
-            self.ui.button_circle(
-                (self.button_positions[2]),
+                (233, 460),
                 "X",
                 (
                     "Collections"
@@ -149,7 +125,7 @@ class RomM:
             self.input.reset_input()
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            if self.status.show_contextual_menu:
+            if self.status.show_contextual_menu and len(self.status.platforms) > 0:
                 self.contextual_menu_options = [
                     (
                         f"{glyphs.about} Platform info",
@@ -159,13 +135,19 @@ class RomM:
                         ),
                     ),
                 ]
+            else:
+                self.contextual_menu_options = []
             self.input.reset_input()
         else:
-            self.platforms_selected_position = self.input.handle_navigation(
-                self.platforms_selected_position,
-                self.max_n_platforms,
-                len(self.status.platforms),
-            )
+            # Reset position if list is empty to avoid out-of-bounds
+            if len(self.status.platforms) == 0:
+                self.platforms_selected_position = 0
+            else:
+                self.platforms_selected_position = self.input.handle_navigation(
+                    self.platforms_selected_position,
+                    self.max_n_platforms,
+                    len(self.status.platforms),
+        )
 
     def _render_collections_view(self):
         self.ui.draw_collections_list(
@@ -209,14 +191,10 @@ class RomM:
             )
             self.status.valid_credentials = True
         else:
+            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
+            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
             self.ui.button_circle(
-                (self.button_positions[0]), "A", "Select", color=color_red
-            )
-            self.ui.button_circle(
-                (self.button_positions[1]), "Y", "Refresh", color=color_green
-            )
-            self.ui.button_circle(
-                (self.button_positions[2]),
+                (233, 460),
                 "X",
                 (
                     "Collections"
@@ -339,23 +317,17 @@ class RomM:
             )
             self.status.valid_credentials = True
         else:
+            self.ui.button_circle((20, 460), "A", "Download", color=color_red)
+            self.ui.button_circle((135, 460), "B", "Back", color=color_yellow)
+            self.ui.button_circle((215, 460), "Y", "Refresh", color=color_green)
             self.ui.button_circle(
-                (self.button_positions[0]), "A", "Download", color=color_red
-            )
-            self.ui.button_circle(
-                (self.button_positions[1]), "B", "Back", color=color_yellow
-            )
-            self.ui.button_circle(
-                (self.button_positions[2]), "Y", "Refresh", color=color_green
-            )
-            self.ui.button_circle(
-                (self.button_positions[3]),
+                (320, 460),
                 "X",
                 f"Filter: {self.status.current_filter}",
                 color=color_blue,
             )
             self.ui.button_circle(
-                (self.button_positions[4]),
+                (435 + (len(self.status.current_filter) * 9), 460),
                 "R1",
                 (
                     "Deselect all"
@@ -506,6 +478,9 @@ class RomM:
             self.ui.draw_menu_background(
                 pos, width, n_options, option_height, gap, padding
             )
+        n_options = len(self.contextual_menu_options)
+        if n_options == 0:  # Avoid division by zero when menu is empty
+            return
         start_idx = int(self.contextual_menu_selected_position / n_options) * n_options
         end_idx = start_idx + n_options
         for i, option in enumerate(self.contextual_menu_options[start_idx:end_idx]):
@@ -587,25 +562,23 @@ class RomM:
                 self.status.abort_download.set()
                 self.input.reset_input()
                 self.status.show_start_menu = False
-            elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
-                current = self.fs.get_sd_storage()
-                self.fs.switch_sd_storage()
-                new = self.fs.get_sd_storage()
-                if new == current:
-                    self.ui.draw_log(
-                        text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
-                        text_color=color_red,
-                    )
-                else:
-                    self.ui.draw_log(
-                        text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
-                        text_color=color_green,
-                    )
-                self.input.reset_input()
+            #elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
+                #current = self.fs.get_sd_storage()
+                #self.fs.switch_sd_storage()
+                #new = self.fs.get_sd_storage()
+                #if new == current:
+                    #self.ui.draw_log(
+                        #text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
+                        #text_color=color_red,
+                    #)
+                #else:
+                    #self.ui.draw_log(
+                        #text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
+                        #text_color=color_green,
+                    #)
+                #self.input.reset_input()
             elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
-                self.ui.draw_end()
-                self.input.cleanup()
-                sys.exit()
+                running = False
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
             self.input.reset_input()
@@ -633,15 +606,6 @@ class RomM:
     def update(self):
         self.ui.draw_clear()
 
-        # Poll SDL2 events
-        event = sdl2.SDL_Event()
-        while sdl2.SDL_PollEvent(event) != 0:
-            if event.type == sdl2.SDL_QUIT:
-                self.ui.draw_end()
-                self.input.cleanup()
-                sys.exit(0)
-            self.input.check(event)
-
         if self.status.me_ready.is_set():
             self.ui.draw_header(self.api.host, self.api.username)
 
@@ -651,9 +615,7 @@ class RomM:
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
                 self.input.reset_input()
-            self.ui.button_circle(
-                (self.button_positions[0]), "Y", "Refresh", color=color_green
-            )
+            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 f"Error: Can't connect to host\n{self.api.host}",
@@ -666,9 +628,7 @@ class RomM:
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
                 self.input.reset_input()
-            self.ui.button_circle(
-                (self.button_positions[0]), "Y", "Refresh", color=color_green
-            )
+            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 "Error: Permission denied",
@@ -713,4 +673,3 @@ class RomM:
             self._update_contextual_menu()
 
         self._update_common()
-        self.ui.draw_update()

@@ -19,6 +19,7 @@ source "${controlfolder}/control.txt"
 get_controls
 
 GAMEDIR="/${directory}/ports/RomM"
+> "$GAMEDIR/logs/log.txt" && exec > >(tee "$GAMEDIR/logs/log.txt") 2>&1
 
 cd $GAMEDIR
 
