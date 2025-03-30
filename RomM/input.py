@@ -8,6 +8,7 @@ import sdl2
 class Input:
     _instance: Optional["Input"] = None
     _key_mapping = {
+        # muOS
         3: "A",
         4: "B",
         5: "Y",
@@ -19,6 +20,24 @@ class Input:
         9: "SELECT",
         10: "START",
         16: "MENUF",
+        # EmulationStation
+        sdl2.SDLK_UP: "DY",
+        sdl2.SDLK_DOWN: "DY",
+        sdl2.SDLK_LEFT: "DX",
+        sdl2.SDLK_RIGHT: "DX",
+        sdl2.SDLK_a: "A",
+        sdl2.SDLK_b: "B",
+        sdl2.SDLK_y: "Y",
+        sdl2.SDLK_x: "X",
+        sdl2.SDLK_l: "L1",
+        sdl2.SDLK_r: "R1",
+        sdl2.SDLK_q: "L2",
+        sdl2.SDLK_e: "R2",
+        sdl2.SDLK_ESCAPE: "SELECT",
+        sdl2.SDLK_RETURN: "START",
+        sdl2.SDLK_m: "MENUF",
+        sdl2.SDLK_PLUS: "V+",
+        sdl2.SDLK_MINUS: "V-",
     }
 
     def __new__(cls):
@@ -98,6 +117,43 @@ class Input:
         current_time = time.time()
 
         if event:
+            # Generic keydown event
+            if event.type == sdl2.SDL_KEYDOWN:
+                key = event.key.keysym.sym
+                print(f"Key pressed: {key}")
+
+                # Map key to button name using the _key_mapping dictionary
+                if key in self._key_mapping:
+                    key_name = self._key_mapping[key]
+                    with self._input_lock:
+                        self._keys_pressed[key_name] = 1
+                        self._key_hold_start_time[key_name] = current_time
+                        # First press is immediately processed
+                        if key_name not in self._key_first_processed:
+                            self._key_first_processed.add(key_name)
+                            print(f"Key first press: {key_name}")
+                        else:
+                            print(f"Key held: {key_name}")
+
+            # Generic keyup event
+            elif event.type == sdl2.SDL_KEYUP:
+                key = event.key.keysym.sym
+                print(f"Key released: {key}")
+
+                # Map key to button name using the _key_mapping dictionary
+                if key in self._key_mapping:
+                    key_name = self._key_mapping[key]
+                    with self._input_lock:
+                        if key_name in self._keys_pressed:
+                            del self._keys_pressed[key_name]
+                        if key_name in self._key_hold_start_time:
+                            del self._key_hold_start_time[key_name]
+                        if key_name in self._last_repeat_time:
+                            del self._last_repeat_time[key_name]
+                        # Remove from first processed set
+                        self._key_first_processed.discard(key_name)
+                    print(f"Key released: {key_name}")
+
             # Joystick button press
             if event.type == sdl2.SDL_JOYBUTTONDOWN:
                 button = event.jbutton.button
