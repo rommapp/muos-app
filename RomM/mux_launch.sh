@@ -21,10 +21,10 @@ mkdir -p "${FONTS_DIR}"
 cp "${ROOT_DIR}/fonts/romm.ttf" "${FONTS_DIR}/romm.ttf"
 cd "${ROOT_DIR}" || exit
 
+# trunk-ignore(shellcheck/SC2155)
+export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${ROOT_DIR}/libs:${LD_LIBRARY_PATH}"
-export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
-export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 
 python3 -u main.py >"${LOG_FILE}" 2>&1
 

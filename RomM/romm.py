@@ -625,7 +625,6 @@ class RomM:
             self.input.reset_input()
 
     def start(self):
-        threading.Thread(target=self.input.check, daemon=True).start()
         self._render_platforms_view()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
@@ -642,8 +641,6 @@ class RomM:
                 self.input.cleanup()
                 sys.exit(0)
             self.input.check(event)
-
-        self.input.check()  # Poll controller state
 
         if self.status.me_ready.is_set():
             self.ui.draw_header(self.api.host, self.api.username)
