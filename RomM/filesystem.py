@@ -55,7 +55,10 @@ class Filesystem:
         )
 
     def get_sd2_catalogue_platform_path(self, platform: str) -> str:
-        return os.path.join(self._sd2_catalogue_path, MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(platform, platform))
+        return os.path.join(
+            self._sd2_catalogue_path,
+            MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(platform, platform),
+        )
 
     def set_sd_storage(self, sd: int) -> None:
         if sd == 1:

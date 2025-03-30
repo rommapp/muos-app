@@ -407,8 +407,8 @@ class RomM:
                 ]
                 is_in_device = self.fs.is_rom_in_device(selected_rom)
 
-                #TODO: is_rom_in_device should return yes, no, different
-                #TODO: this check is broken when different
+                # TODO: is_rom_in_device should return yes, no, different
+                # TODO: this check is broken when different
                 if is_in_device:
                     self.contextual_menu_options.append(
                         (

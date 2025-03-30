@@ -25,7 +25,7 @@ Rom = namedtuple(
         "genres",
         "franchises",
         "companies",
-        "age_ratings"
+        "age_ratings",
     ],
 )
 Collection = namedtuple("Collection", ["id", "name", "rom_count", "virtual"])

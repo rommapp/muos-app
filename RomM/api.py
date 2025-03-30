@@ -17,7 +17,7 @@ from imageutils import ImageUtils
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
-from utils import add_alpha_channel, jpg_to_png, str_to_bool
+from utils import str_to_bool
 
 # Load .env file from one folder above
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
@@ -44,8 +44,10 @@ class API:
         self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
         self._download_assets = str_to_bool(os.getenv("DOWNLOAD_ASSETS", "false"))
         self._fullscreen_assets = str_to_bool(os.getenv("FULLSCREEN_ASSETS", "false"))
-        self._download_existing_roms = str_to_bool(os.getenv("DOWNLOAD_EXISTING_ROMS", "true"))
-        
+        self._download_existing_roms = str_to_bool(
+            os.getenv("DOWNLOAD_EXISTING_ROMS", "true")
+        )
+
         self._status = Status()
         self._file_system = Filesystem()
         self._image_utils = ImageUtils(640, 480)
@@ -424,8 +426,12 @@ class API:
                 regions=rom["regions"],
                 revision=rom["revision"],
                 tags=rom["tags"],
-                path_cover_large=rom["path_cover_large"].split("?")[0], #TODO: safety check?
-                path_cover_small=rom["path_cover_small"].split("?")[0], #TODO: safety check?
+                path_cover_large=rom["path_cover_large"].split("?")[
+                    0
+                ],  # TODO: safety check?
+                path_cover_small=rom["path_cover_small"].split("?")[
+                    0
+                ],  # TODO: safety check?
                 path_screenshot=f"/assets/romm/resources/roms/{rom['platform_id']}/{rom['id']}/screenshots/0.jpg",
                 first_release_date=rom["first_release_date"],
                 average_rating=rom["average_rating"],
@@ -551,7 +557,7 @@ class API:
 
             is_in_device = self._file_system.is_rom_in_device(rom)
 
-            if self._download_existing_roms or not is_in_device: 
+            if self._download_existing_roms or not is_in_device:
 
                 try:
                     platform_dir = self._file_system.get_sd_storage_platform_path(
@@ -578,7 +584,9 @@ class API:
                         self._reset_download_status(valid_host=True)
                         continue
                     elif e.code == 404:
-                        self._reset_download_status(valid_host=True, valid_credentials=True)
+                        self._reset_download_status(
+                            valid_host=True, valid_credentials=True
+                        )
                         continue
                     else:
                         raise
@@ -622,16 +630,12 @@ class API:
                 continue
 
             box_path = os.path.join(
-                self._file_system.get_sd_catalogue_platform_path(
-                    rom.platform_slug
-                ),
+                self._file_system.get_sd_catalogue_platform_path(rom.platform_slug),
                 "box",
                 f"{filename}.png",
             )
             preview_path = os.path.join(
-                self._file_system.get_sd_catalogue_platform_path(
-                    rom.platform_slug
-                ),
+                self._file_system.get_sd_catalogue_platform_path(rom.platform_slug),
                 "preview",
                 f"{filename}.png",
             )
@@ -640,12 +644,14 @@ class API:
             os.makedirs(os.path.dirname(box_path), exist_ok=True)
             os.makedirs(os.path.dirname(preview_path), exist_ok=True)
 
-            self._image_utils.process_assets(fullscreen=self._fullscreen_assets, 
-                                             cover_url=f"{self.host}{rom.path_cover_small}", 
-                                             screenshot_url=f"{self.host}{rom.path_screenshot}", 
-                                             box_path=box_path,
-                                             preview_path=preview_path,
-                                             headers=self.headers)
+            self._image_utils.process_assets(
+                fullscreen=self._fullscreen_assets,
+                cover_url=f"{self.host}{rom.path_cover_small}",
+                screenshot_url=f"{self.host}{rom.path_screenshot}",
+                box_path=box_path,
+                preview_path=preview_path,
+                headers=self.headers,
+            )
 
         # End of download
         self._reset_download_status(valid_host=True, valid_credentials=True)
