@@ -37,8 +37,11 @@ class Input:
         self._keys_pressed: Dict[str, int] = {}
         self._key_hold_start_time: Dict[str, float] = {}
 
+        # Track which keys have had their first event processed
+        self._key_first_processed: Set[str] = set()
+
         # Key repeat settings
-        self._initial_delay = 0.25  # Initial delay between scrolls (slower)
+        self._initial_delay = 0.25  # Delay after first event before repeating
         self._min_delay = 0.05  # Minimum delay after acceleration (faster)
         self._acceleration_time = 1.0  # Time in seconds to reach maximum speed
 
@@ -106,7 +109,12 @@ class Input:
                     with self._input_lock:
                         self._keys_pressed[key_name] = 1
                         self._key_hold_start_time[key_name] = current_time
-                    print(f"Key pressed: {key_name}")
+                        # First press is immediately processed
+                        if key_name not in self._key_first_processed:
+                            self._key_first_processed.add(key_name)
+                            print(f"Key first press: {key_name}")
+                        else:
+                            print(f"Key held: {key_name}")
 
             # Joystick button release
             elif event.type == sdl2.SDL_JOYBUTTONUP:
@@ -123,6 +131,8 @@ class Input:
                             del self._key_hold_start_time[key_name]
                         if key_name in self._last_repeat_time:
                             del self._last_repeat_time[key_name]
+                        # Remove from first processed set
+                        self._key_first_processed.discard(key_name)
                     print(f"Key released: {key_name}")
 
             # Joystick axis motion
@@ -138,17 +148,45 @@ class Input:
                     if axis == 0:
                         key_name = "DX"
                         with self._input_lock:
+                            # Check if this is a new direction or same direction
+                            is_new_press = (
+                                key_name not in self._keys_pressed
+                                or self._keys_pressed[key_name] != normalized_value
+                            )
+
                             self._keys_pressed[key_name] = normalized_value
                             self._key_hold_start_time[key_name] = current_time
-                        print(f"Key pressed: {key_name} = {normalized_value}")
+
+                            # First movement in this direction is immediately processed
+                            if is_new_press:
+                                self._key_first_processed.add(key_name)
+                                print(
+                                    f"Axis first move: {key_name} = {normalized_value}"
+                                )
+                            else:
+                                print(f"Axis held: {key_name} = {normalized_value}")
 
                     # Map axis 1 to DY (up/down)
                     elif axis == 1:
                         key_name = "DY"
                         with self._input_lock:
+                            # Check if this is a new direction or same direction
+                            is_new_press = (
+                                key_name not in self._keys_pressed
+                                or self._keys_pressed[key_name] != normalized_value
+                            )
+
                             self._keys_pressed[key_name] = normalized_value
                             self._key_hold_start_time[key_name] = current_time
-                        print(f"Key pressed: {key_name} = {normalized_value}")
+
+                            # First movement in this direction is immediately processed
+                            if is_new_press:
+                                self._key_first_processed.add(key_name)
+                                print(
+                                    f"Axis first move: {key_name} = {normalized_value}"
+                                )
+                            else:
+                                print(f"Axis held: {key_name} = {normalized_value}")
 
                 # Reset when axis returns to center
                 elif abs(value) < 5000:
@@ -160,7 +198,9 @@ class Input:
                             del self._key_hold_start_time[key_name]
                         if key_name in self._last_repeat_time:
                             del self._last_repeat_time[key_name]
-                    print(f"Key released: {key_name}")
+                        # Remove from first processed set
+                        self._key_first_processed.discard(key_name)
+                    print(f"Axis centered: {key_name}")
 
             # Joystick hat motion (D-pad)
             elif event.type == sdl2.SDL_JOYHATMOTION:
@@ -170,6 +210,12 @@ class Input:
                 print(f"Hat {hat} = {direction} ({value})")
 
                 with self._input_lock:
+                    # Track which keys were previously set
+                    prev_dx = "DX" in self._keys_pressed
+                    prev_dy = "DY" in self._keys_pressed
+                    prev_dx_val = self._keys_pressed.get("DX", 0)
+                    prev_dy_val = self._keys_pressed.get("DY", 0)
+
                     # Clear previous D-pad states
                     for key in ["DX", "DY"]:
                         if key in self._keys_pressed:
@@ -178,47 +224,73 @@ class Input:
                             del self._key_hold_start_time[key]
                         if key in self._last_repeat_time:
                             del self._last_repeat_time[key]
+                        # Don't remove from first processed yet
 
                     # Set new D-pad states
                     if value & 1:  # UP
                         self._keys_pressed["DY"] = -1
                         self._key_hold_start_time["DY"] = current_time
-
-                    if value & 4:  # DOWN
+                        # Check if this is a new direction
+                        if not prev_dy or prev_dy_val != -1:
+                            self._key_first_processed.add("DY")
+                    elif value & 4:  # DOWN
                         self._keys_pressed["DY"] = 1
                         self._key_hold_start_time["DY"] = current_time
+                        # Check if this is a new direction
+                        if not prev_dy or prev_dy_val != 1:
+                            self._key_first_processed.add("DY")
+                    else:
+                        # No vertical movement
+                        self._key_first_processed.discard("DY")
 
                     if value & 2:  # RIGHT
                         self._keys_pressed["DX"] = 1
                         self._key_hold_start_time["DX"] = current_time
-
-                    if value & 8:  # LEFT
+                        # Check if this is a new direction
+                        if not prev_dx or prev_dx_val != 1:
+                            self._key_first_processed.add("DX")
+                    elif value & 8:  # LEFT
                         self._keys_pressed["DX"] = -1
                         self._key_hold_start_time["DX"] = current_time
+                        # Check if this is a new direction
+                        if not prev_dx or prev_dx_val != -1:
+                            self._key_first_processed.add("DX")
+                    else:
+                        # No horizontal movement
+                        self._key_first_processed.discard("DX")
 
         # Process key repeats for held buttons
         with self._input_lock:
             keys_to_process = list(self._key_hold_start_time.keys())
 
             for key_name in keys_to_process:
-                hold_time = current_time - self._key_hold_start_time[key_name]
-
-                # Skip if not held long enough for initial delay
-                if hold_time < self._initial_delay:
+                # Skip keys that haven't had their first event processed yet
+                if key_name not in self._key_first_processed:
                     continue
 
+                hold_time = current_time - self._key_hold_start_time[key_name]
+
+                # First press is already processed immediately when the key is pressed
+                # Now we only care about repeats
+
                 # Calculate repeat rate based on how long the key has been held
-                if hold_time > self._acceleration_time:
+                if hold_time > self._acceleration_time + self._initial_delay:
                     # At maximum speed
                     repeat_delay = self._min_delay
-                else:
+                elif hold_time > self._initial_delay:
                     # Gradually accelerate
-                    progress = (hold_time - self._initial_delay) / (
-                        self._acceleration_time - self._initial_delay
-                    )
+                    progress = (
+                        hold_time - self._initial_delay
+                    ) / self._acceleration_time
                     repeat_delay = self._initial_delay - progress * (
                         self._initial_delay - self._min_delay
                     )
+                    repeat_delay = max(
+                        self._min_delay, repeat_delay
+                    )  # Ensure we don't go below min delay
+                else:
+                    # Still in initial delay period
+                    continue
 
                 # Check if it's time for a repeat
                 last_repeat = self._last_repeat_time.get(key_name, 0)
@@ -226,6 +298,7 @@ class Input:
                     # Update the last repeat time
                     self._last_repeat_time[key_name] = current_time
                     print(f"Key repeat: {key_name}")
+                    # The key is already in _keys_pressed, so handle_navigation will see it
 
     def key(self, key_name: str, key_value: int = 99) -> bool:
         """Check if a specific key is pressed with an optional value check"""
@@ -240,6 +313,8 @@ class Input:
         self, selected_position: int, items_per_page: int, total_items: int
     ) -> int:
         """Handle navigation based on pressed keys"""
+        original_position = selected_position
+
         if self.key("DY"):
             dy_value = self._keys_pressed.get("DY", 0)
             if dy_value == 1:  # DOWN
@@ -296,6 +371,14 @@ class Input:
                 else:
                     selected_position = total_items - 1
 
+        # If position changed, mark keys as processed
+        if selected_position != original_position:
+            with self._input_lock:
+                # Mark all active navigation keys as having their first event processed
+                for key in ["DX", "DY", "L1", "R1", "L2", "R2"]:
+                    if key in self._keys_pressed:
+                        self._key_first_processed.add(key)
+
         return selected_position
 
     def reset_input(self) -> None:
@@ -304,6 +387,7 @@ class Input:
             self._keys_pressed.clear()
             self._key_hold_start_time.clear()
             self._last_repeat_time.clear()
+            self._key_first_processed.clear()
 
     def cleanup(self) -> None:
         """Clean up SDL resources"""
