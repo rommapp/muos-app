@@ -2,9 +2,7 @@
 
 ## Necessities
 
-- Test extended features to verify working order (buttons may have been missed, missing menu w/ platform info, etc).
-- SD is hardcoded based on where romM client was run (backs out two directories). Regain ability to choose SD2.
-- Scale font and buttons better for high dpi displays such as the Retroid Pocket Mini (3.7" AMOLED 1280x960).
+- SD is hardcoded based on where RomM client was run (backs out two directories). Regain ability to choose SD2.
 
 ## Ideas
 
