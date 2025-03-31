@@ -1,5 +1,4 @@
 import os
-import sys
 import threading
 import time
 from typing import Any, Tuple
@@ -22,6 +21,7 @@ from ui import (
 
 
 class RomM:
+    running: bool = True
     spinner_speed = 0.05
     start_menu_options = [
         value
@@ -43,8 +43,8 @@ class RomM:
         self.collections_selected_position = 0
         self.roms_selected_position = 0
 
-        self.max_n_platforms = 11
-        self.max_n_collections = 11
+        self.max_n_platforms = 10
+        self.max_n_collections = 10
         self.max_n_roms = 10
 
         self.last_spinner_update = time.time()
@@ -147,7 +147,7 @@ class RomM:
                     self.platforms_selected_position,
                     self.max_n_platforms,
                     len(self.status.platforms),
-        )
+                )
 
     def _render_collections_view(self):
         self.ui.draw_collections_list(
@@ -562,23 +562,24 @@ class RomM:
                 self.status.abort_download.set()
                 self.input.reset_input()
                 self.status.show_start_menu = False
-            #elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
-                #current = self.fs.get_sd_storage()
-                #self.fs.switch_sd_storage()
-                #new = self.fs.get_sd_storage()
-                #if new == current:
-                    #self.ui.draw_log(
-                        #text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
-                        #text_color=color_red,
-                    #)
-                #else:
-                    #self.ui.draw_log(
-                        #text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
-                        #text_color=color_green,
-                    #)
-                #self.input.reset_input()
+            # SD switching temporarily disabled
+            # elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
+            # current = self.fs.get_sd_storage()
+            # self.fs.switch_sd_storage()
+            # new = self.fs.get_sd_storage()
+            # if new == current:
+            # self.ui.draw_log(
+            # text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
+            # text_color=color_red,
+            # )
+            # else:
+            # self.ui.draw_log(
+            # text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
+            # text_color=color_green,
+            # )
+            # self.input.reset_input()
             elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
-                running = False
+                self.running = False
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
             self.input.reset_input()

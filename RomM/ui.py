@@ -311,8 +311,16 @@ class UserInterface:
         fill: str = color_violet,
     ):
         self.draw_rectangle_r(
+            [10, 50, self.screen_width - 10, 100], 5, outline=color_gray_2
+        )
+        self.draw_text(
+            (self.screen_width / 2, 62),
+            "Platforms",
+            anchor="mm",
+        )
+        self.draw_rectangle_r(
             [10, 70, self.screen_width - 10, self.screen_height - 43],
-            5,
+            0,
             fill=color_gray_2,
             outline=None,
         )
@@ -329,7 +337,7 @@ class UserInterface:
             )
             self.row_list(
                 row_text,
-                (20, 90 + (i * 35)),
+                (20, 80 + (i * 35)),
                 self.screen_width - 40,
                 32,
                 is_selected,
@@ -345,8 +353,16 @@ class UserInterface:
         fill: str = color_violet,
     ):
         self.draw_rectangle_r(
-            [10, 75, self.screen_width - 10, self.screen_height - 43],
-            5,
+            [10, 50, self.screen_width - 10, 100], 5, outline=color_gray_2
+        )
+        self.draw_text(
+            (self.screen_width / 2, 62),
+            "Collections",
+            anchor="mm",
+        )
+        self.draw_rectangle_r(
+            [10, 70, self.screen_width - 10, self.screen_height - 43],
+            0,
             fill=color_gray_2,
             outline=None,
         )
@@ -379,7 +395,7 @@ class UserInterface:
 
             self.row_list(
                 row_text,
-                (20, 45 + (i * 35)),
+                (20, 80 + (i * 35)),
                 self.screen_width - 40,
                 32,
                 is_selected,
@@ -400,7 +416,7 @@ class UserInterface:
             [10, 50, self.screen_width - 10, 100], 5, outline=color_gray_2
         )
         self.draw_text(
-            (self.screen_width / 2, 60),
+            (self.screen_width / 2, 62),
             header_text,
             color=header_color,
             anchor="mm",

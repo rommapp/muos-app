@@ -59,13 +59,12 @@ def main():
     romm = RomM()
     romm.start()
 
-    running = True
-    while running:
+    while romm.running:
         events = sdl2.ext.get_events()
         for event in events:
             input_handler.check(event)
             if event.type == sdl2.SDL_QUIT:
-                running = False
+                romm.running = False
             elif event.type == sdl2.SDL_WINDOWEVENT:
                 if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
                     # Don’t update ui.screen_width/height here; keep them at base resolution
@@ -115,6 +114,8 @@ def main():
         # Add a small sleep to prevent 100% CPU usage
         sdl2.SDL_Delay(16)
 
+    # Cleanup
+    print("Exiting...")
     sdl2.SDL_DestroyRenderer(renderer)
     sdl2.SDL_DestroyWindow(window)
     sdl2.SDL_Quit()
