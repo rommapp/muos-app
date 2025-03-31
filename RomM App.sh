@@ -19,10 +19,13 @@ source "${controlfolder}/control.txt"
 get_controls
 
 GAMEDIR="/${directory}/ports/RomM"
-> "$GAMEDIR/logs/log.txt" && exec > >(tee "$GAMEDIR/logs/log.txt") 2>&1
+LOG_DIR="${GAMEDIR}/logs"
 
-cd $GAMEDIR
+mkdir -p "${LOG_DIR}"
 
+cd "${GAMEDIR}" || exit
+
+export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"

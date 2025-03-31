@@ -1,32 +1,29 @@
+# trunk-ignore-all(ruff/E402)
+
+import ctypes
 import os
 import sys
-import ctypes
 
 # Add the PIL and dotenv dependencies to the path
 base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
-# trunk-ignore(ruff/E402)
 import sdl2
 import sdl2.ext
-# trunk-ignore(ruff/E402)
-
 from dotenv import load_dotenv
 
 # Load .env file from one folder above
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-log_file_path = "./logs/log.txt"
-os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-sys.stdout = open(log_file_path, "w", buffering=1)
+sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
 
 
 def main():
+    from input import Input
     from romm import RomM
     from ui import UserInterface
-    from input import Input
 
-    # Initialize SDL2 with video and game controller support
+    # Initialize SDL2 with video and joystick support
     if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_JOYSTICK) < 0:
         print(f"SDL2 initialization failed: {sdl2.SDL_GetError()}")
         sys.exit(1)
@@ -34,11 +31,12 @@ def main():
 
     # Create a fullscreen window
     window = sdl2.SDL_CreateWindow(
-        "RomM".encode('utf-8'),
+        "RomM".encode("utf-8"),
         sdl2.SDL_WINDOWPOS_UNDEFINED,
         sdl2.SDL_WINDOWPOS_UNDEFINED,
-        0, 0,  # Size ignored in fullscreen mode
-        sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_SHOWN
+        0,
+        0,  # Size ignored in fullscreen mode
+        sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_SHOWN,
     )
     if not window:
         print(f"Failed to create window: {sdl2.SDL_GetError()}")
@@ -78,14 +76,18 @@ def main():
         sdl2.SDL_RenderClear(renderer)
 
         ui.draw_start()  # Render at 640x480
-        romm.update()    # Draw content
+        romm.update()  # Draw content
 
         # Convert PIL image to SDL2 texture at base resolution
         image = ui.get_image()
         rgba_data = image.tobytes()
         surface = sdl2.SDL_CreateRGBSurfaceWithFormatFrom(
-            rgba_data, base_width, base_height, 32, base_width * 4,
-            sdl2.SDL_PIXELFORMAT_RGBA32
+            rgba_data,
+            base_width,
+            base_height,
+            32,
+            base_width * 4,
+            sdl2.SDL_PIXELFORMAT_RGBA32,
         )
         texture = sdl2.SDL_CreateTextureFromSurface(renderer, surface)
         sdl2.SDL_FreeSurface(surface)
@@ -93,7 +95,9 @@ def main():
         # Get current window size for scaling
         window_width = ctypes.c_int()
         window_height = ctypes.c_int()
-        sdl2.SDL_GetWindowSize(window, ctypes.byref(window_width), ctypes.byref(window_height))
+        sdl2.SDL_GetWindowSize(
+            window, ctypes.byref(window_width), ctypes.byref(window_height)
+        )
         window_width, window_height = window_width.value, window_height.value
 
         # Calculate scaling to fit fullscreen while preserving 4:3 aspect ratio
@@ -116,6 +120,7 @@ def main():
     sdl2.SDL_Quit()
     sys.stdout.close()
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
