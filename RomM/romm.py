@@ -584,9 +584,9 @@ class RomM:
         while self.running:
             events = sdl2.ext.get_events()
             for event in events:
-                self.input.check(event)
                 if event.type == sdl2.SDL_QUIT:
                     self.running = False
+                self.input.check(event)
 
             sdl2.SDL_Delay(1)  # Delay to prevent high CPU usage
 

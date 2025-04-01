@@ -119,7 +119,11 @@ class Input:
             self._keys_held.discard(key_name)
             self._keys_held_start_time.pop(key_name, None)
 
-    def check(self, event=None) -> None:
+    def check(self, event=None) -> bool:
+        """
+        Check for input events and update key states
+        Returns if an event was processed
+        """
         if event:
             # Generic keydown event
             if event.type == sdl2.SDL_KEYDOWN:
@@ -129,6 +133,7 @@ class Input:
                     key_name = self._key_mapping[key]
                     self._add_key_pressed(key_name)
                     print(f"Key pressed: {key_name}")
+                    return True
 
             # Generic keyup event
             elif event.type == sdl2.SDL_KEYUP:
@@ -147,6 +152,7 @@ class Input:
                     key_name = self._key_mapping[button]
                     self._add_key_pressed(key_name)
                     print(f"Button pressed: {key_name}")
+                    return True
 
             # Joystick button release
             elif event.type == sdl2.SDL_JOYBUTTONUP:
@@ -168,6 +174,7 @@ class Input:
                     key = "DX" if axis == 0 else "DY"
                     dir = "+" if value > 0 else "-"
                     self._add_key_pressed(f"{key}{dir}")
+                    return True
 
                 # Reset when axis returns to center
                 elif abs(value) < 5000:
@@ -193,13 +200,19 @@ class Input:
                 # Set new D-pad states
                 if value & 1:  # UP
                     self._add_key_pressed("DY-")
+                    return True
                 elif value & 4:  # DOWN
                     self._add_key_pressed("DY+")
+                    return True
 
                 if value & 2:  # RIGHT
                     self._add_key_pressed("DX+")
+                    return True
                 elif value & 8:  # LEFT
                     self._add_key_pressed("DX-")
+                    return True
+
+        return False
 
     def key(self, key_name: str) -> bool:
         """Check if a specific key is pressed with an optional value check"""

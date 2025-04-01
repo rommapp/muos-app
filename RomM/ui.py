@@ -1,8 +1,11 @@
+import ctypes
 import os
 import shutil
+import sys
 import time
 from typing import Optional
 
+import sdl2
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom
@@ -35,6 +38,8 @@ class UserInterface:
     activeDraw: ImageDraw.ImageDraw
 
     def __init__(self):
+        self.window = self._create_window()
+        self.renderer = self._create_renderer()
         self.activeImage = self.create_image()
         self.activeDraw = ImageDraw.Draw(self.activeImage)
 
@@ -506,3 +511,67 @@ class UserInterface:
             fill=color_gray_2,
             outline=color_violet,
         )
+
+    def _create_window(self):
+        window = sdl2.SDL_CreateWindow(
+            "RomM".encode("utf-8"),
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            0,
+            0,  # Size ignored in fullscreen mode
+            sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_SHOWN,
+        )
+
+        if not window:
+            print(f"Failed to create window: {sdl2.SDL_GetError()}")
+            sys.exit(1)
+
+        return window
+
+    def _create_renderer(self):
+        renderer = sdl2.SDL_CreateRenderer(
+            self.window, -1, sdl2.SDL_RENDERER_ACCELERATED
+        )
+
+        if not renderer:
+            print(f"Failed to create renderer: {sdl2.SDL_GetError()}")
+            sys.exit(1)
+
+        return renderer
+
+    def render_to_screen(self):
+        # Convert PIL image to SDL2 texture at base resolution
+        image = self.get_image()
+        rgba_data = image.tobytes()
+        surface = sdl2.SDL_CreateRGBSurfaceWithFormatFrom(
+            rgba_data,
+            self.screen_width,
+            self.screen_height,
+            32,
+            self.screen_width * 4,
+            sdl2.SDL_PIXELFORMAT_RGBA32,
+        )
+        texture = sdl2.SDL_CreateTextureFromSurface(self.renderer, surface)
+        sdl2.SDL_FreeSurface(surface)
+
+        # Get current window size for scaling
+        window_width = ctypes.c_int()
+        window_height = ctypes.c_int()
+        sdl2.SDL_GetWindowSize(
+            self.window, ctypes.byref(window_width), ctypes.byref(window_height)
+        )
+        window_width, window_height = window_width.value, window_height.value
+
+        # Calculate scaling to fit fullscreen while preserving 4:3 aspect ratio
+        scale = min(
+            window_width / self.screen_width, window_height / self.screen_height
+        )
+        dst_width = int(self.screen_width * scale)
+        dst_height = int(self.screen_height * scale)
+        dst_x = (window_width - dst_width) // 2
+        dst_y = (window_height - dst_height) // 2
+        dst_rect = sdl2.SDL_Rect(dst_x, dst_y, dst_width, dst_height)
+
+        sdl2.SDL_RenderCopy(self.renderer, texture, None, dst_rect)
+        sdl2.SDL_RenderPresent(self.renderer)
+        sdl2.SDL_DestroyTexture(texture)
