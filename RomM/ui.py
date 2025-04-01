@@ -56,6 +56,9 @@ class UserInterface:
 
     def draw_start(self):
         """Initialize drawing for a new frame."""
+        # Render directly to the screen
+        sdl2.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
+        sdl2.SDL_RenderClear(self.renderer)
         self.active_image = self.create_image()
         self.active_draw = ImageDraw.Draw(self.active_image)
 

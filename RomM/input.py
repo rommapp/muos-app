@@ -120,10 +120,9 @@ class Input:
             self._keys_held.add(key_name)
             self._keys_held_start_time[key_name] = time.time()
 
-    def _remove_key_pressed(self, key_name: str) -> None:
+    def _remove_key_held(self, key_name: str) -> None:
         """Remove a key from the pressed set"""
         with self._input_lock:
-            self._keys_pressed.discard(key_name)
             self._keys_held.discard(key_name)
             self._keys_held_start_time.pop(key_name, None)
 
@@ -150,7 +149,7 @@ class Input:
                 # Clear the key if it was pressed
                 if button in self._key_mapping:
                     key_name = self._key_mapping[button]
-                    self._remove_key_pressed(key_name)
+                    self._remove_key_held(key_name)
                     print(f"Button released: {key_name}")
 
             # Controller axis motion
@@ -169,8 +168,8 @@ class Input:
 
                     # Reset when axis returns to center
                     elif abs(value) < 5000:
-                        self._remove_key_pressed(f"{key_name}+")
-                        self._remove_key_pressed(f"{key_name}-")
+                        self._remove_key_held(f"{key_name}+")
+                        self._remove_key_held(f"{key_name}-")
 
         return False
 
@@ -240,6 +239,11 @@ class Input:
                     selected_position = total_items - 1
 
         return selected_position
+
+    def clear_pressed(self) -> None:
+        """Clear the pressed keys"""
+        with self._input_lock:
+            self._keys_pressed.clear()
 
     def cleanup(self) -> None:
         """Clean up SDL resources"""
