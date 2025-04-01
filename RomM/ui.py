@@ -21,6 +21,7 @@ color_blue = "#bb7200"
 color_yellow = "#3b80aa"
 color_gray_1 = "#383838"
 color_gray_2 = "#141414"
+color_white = "#ffffff"
 
 
 class UserInterface:
@@ -144,7 +145,7 @@ class UserInterface:
         position: tuple[float, float],
         text: str,
         font: int = 15,
-        color: str = "white",
+        color: str = color_white,
         **kwargs,
     ):
         self.active_draw.text(
@@ -177,6 +178,7 @@ class UserInterface:
         height: int,
         selected: bool = False,
         fill: str = color_violet,
+        color: str = color_white,
         outline: str | None = None,
         append_icon_path: str | None = None,
     ):
@@ -205,7 +207,9 @@ class UserInterface:
             )
 
         self.draw_text(
-            (position[0] + margin_left_text, position[1] + margin_top_text), text
+            (position[0] + margin_left_text, position[1] + margin_top_text),
+            text,
+            color=color,
         )
 
     def draw_circle(
@@ -213,7 +217,7 @@ class UserInterface:
         position: ImageDraw.Coords,
         radius: int,
         fill: str | None = None,
-        outline: str | None = "white",
+        outline: str | None = color_white,
     ):
         self.active_draw.ellipse(
             [
@@ -256,7 +260,7 @@ class UserInterface:
         text_line_2: str = "",
         fill: str = "black",
         outline: str = "black",
-        text_color: str = "white",
+        text_color: str = color_white,
         background: bool = True,
     ):
         margin_bg = 5

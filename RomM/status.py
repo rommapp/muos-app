@@ -2,7 +2,6 @@ import itertools
 import threading
 from typing import Optional
 
-from glyps import glyphs
 from models import Collection, Platform, Rom
 
 
@@ -17,12 +16,6 @@ class Filter:
     ALL = "all"
     LOCAL = "local"
     REMOTE = "remote"
-
-
-class StartMenuOptions:
-    ABORT_DOWNLOAD = (f"{glyphs.abort} Abort downloads", 0)
-    SD_SWITCH = (f"{glyphs.microsd} Switch SD", 1)
-    EXIT = (f"{glyphs.exit} Exit", 2)
 
 
 class Status:

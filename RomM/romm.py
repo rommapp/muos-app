@@ -10,26 +10,29 @@ from api import API
 from filesystem import Filesystem
 from glyps import glyphs
 from input import Input
-from status import Filter, StartMenuOptions, Status, View
+from status import Filter, Status, View
 from ui import (
     UserInterface,
     color_blue,
     color_gray_1,
+    color_gray_2,
     color_green,
     color_red,
     color_violet,
+    color_white,
     color_yellow,
 )
+
+
+class StartMenuOptions:
+    ABORT_DOWNLOAD = f"{glyphs.abort} Abort downloads"
+    SD_SWITCH = f"{glyphs.microsd} Switch SD"
+    EXIT = f"{glyphs.exit} Exit"
 
 
 class RomM:
     running: bool = True
     spinner_speed = 0.05
-    start_menu_options = [
-        value
-        for name, value in StartMenuOptions.__dict__.items()
-        if not name.startswith("_")
-    ]
 
     def __init__(self) -> None:
         self.api = API()
@@ -51,6 +54,13 @@ class RomM:
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
+
+        # Set start menu options
+        self.start_menu_options = [
+            (StartMenuOptions.ABORT_DOWNLOAD, 0),
+            (StartMenuOptions.SD_SWITCH, 1 if self.fs._sd2_roms_storage_path else -1),
+            (StartMenuOptions.EXIT, 2 if self.fs._sd2_roms_storage_path else 1),
+        ]
 
     def _render_platforms_view(self):
         if self.status.platforms_ready.is_set():
@@ -418,7 +428,7 @@ class RomM:
                 ]
                 is_in_device = os.path.exists(
                     os.path.join(
-                        self.fs.get_storage_platform_path(selected_rom.platform_slug),
+                        self.fs.get_platforms_storage_path(selected_rom.platform_slug),
                         selected_rom.fs_name,
                     )
                 )
@@ -429,7 +439,7 @@ class RomM:
                             1,
                             lambda: os.remove(
                                 os.path.join(
-                                    self.fs.get_storage_platform_path(
+                                    self.fs.get_platforms_storage_path(
                                         selected_rom.platform_slug
                                     ),
                                     selected_rom.fs_name,
@@ -491,7 +501,7 @@ class RomM:
         pos = [self.ui.screen_width / 3, self.ui.screen_height / 3]
         padding = 5
         width = 200
-        n_options = len(self.start_menu_options)
+        n_selectable_options = 3 if self.fs._sd2_roms_storage_path else 2
         option_height = 32
         gap = 3
         title = "Main menu"
@@ -501,7 +511,7 @@ class RomM:
         self.ui.draw_menu_background(
             pos,
             width,
-            n_options,
+            len(self.start_menu_options),
             option_height,
             gap,
             padding,
@@ -509,15 +519,20 @@ class RomM:
             extra_bottom_offset=version_height,
         )
 
+        selected_position = self.start_menu_selected_position % n_selectable_options
         for i, option in enumerate(self.start_menu_options):
-            is_selected = i == (self.start_menu_selected_position % n_options)
             self.ui.row_list(
-                option[0],
-                (pos[0] + padding, pos[1] + padding + (i * (option_height + gap))),
-                width,
-                option_height,
-                is_selected,
+                text=option[0],
+                position=(
+                    pos[0] + padding,
+                    pos[1] + padding + (i * (option_height + gap)),
+                ),
+                width=width,
+                height=option_height,
+                selected=selected_position == option[1],
+                color=color_white if option[1] > -1 else color_gray_2,
             )
+
         self.ui.draw_text(
             (
                 pos[0] + width - version_x_adjustment,
@@ -535,35 +550,23 @@ class RomM:
 
     def _update_start_menu(self):
         if self.input.key("A"):
-            if self.start_menu_selected_position == StartMenuOptions.ABORT_DOWNLOAD[1]:
+            if self.start_menu_selected_position == self.start_menu_options[0][1]:
                 self.status.abort_download.set()
                 self.status.show_start_menu = False
-            elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
+            elif self.start_menu_selected_position == self.start_menu_options[1][1]:
+                self.fs.switch_sd_storage()
                 self.status.show_start_menu = False
-                # current = self.fs.get_sd_storage()
-                # self.fs.switch_sd_storage()
-                # new = self.fs.get_sd_storage()
-                # if new == current:
-                #     self.ui.draw_log(
-                #         text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
-                #         text_color=color_red,
-                #     )
-                # else:
-                #     self.ui.draw_log(
-                #         text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
-                #         text_color=color_green,
-                #     )
-                # self.input.reset_input()
-            elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
+            elif self.start_menu_selected_position == self.start_menu_options[2][1]:
                 self.running = False
                 self.status.show_start_menu = False
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
         else:
+            n_selectable_options = 3 if self.fs._sd2_roms_storage_path else 2
             self.start_menu_selected_position = self.input.handle_navigation(
                 self.start_menu_selected_position,
-                len(self.start_menu_options),
-                len(self.start_menu_options),
+                n_selectable_options,
+                n_selectable_options,
             )
 
     def _update_common(self):

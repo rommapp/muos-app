@@ -237,7 +237,7 @@ class API:
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
         if not self._file_system.is_muos:
-            roms_path = self._file_system.get_roms_storage_path()
+            roms_path = self._file_system.get_sd1_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
                     d.lower()
@@ -432,7 +432,7 @@ class API:
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
         if not self._file_system.is_muos:
-            roms_path = self._file_system.get_roms_storage_path()
+            roms_path = self._file_system.get_sd1_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
                     d.lower()
@@ -495,9 +495,8 @@ class API:
         for i, rom in enumerate(self._status.download_queue):
             self._status.downloading_rom = rom
             self._status.downloading_rom_position = i + 1
-            # Use get_storage_platform_path instead of get_sd_storage_platform_path
             dest_path = os.path.join(
-                self._file_system.get_storage_platform_path(rom.platform_slug),
+                self._file_system.get_sd1_platforms_storage_path(rom.platform_slug),
                 self._sanitize_filename(rom.fs_name),
             )
             url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
