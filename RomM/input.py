@@ -84,25 +84,34 @@ class Input:
         config_path = sdl2.SDL_getenv(b"SDL_GAMECONTROLLERCONFIG")
         if config_path:
             config_str = config_path.decode("utf-8")
+
             if "," in config_str and not config_str.endswith((".txt", ".cfg")):
-                # Treat as mapping string
-                if sdl2.SDL_GameControllerAddMapping(config_str.encode("utf-8")) == -1:
+                # Treat as mapping string - encode to bytes
+                mapping_bytes = config_str.encode("utf-8")
+                result = sdl2.SDL_GameControllerAddMapping(mapping_bytes)
+                if result == -1:
                     print(
                         f"Warning: Failed to load mapping from environment: {sdl2.SDL_GetError().decode()}"
                     )
                 else:
                     print("Loaded controller mapping from environment")
             else:
-                # Treat as file path
+                # Treat as file path - encode to bytes for SDL function
                 if os.path.exists(config_str):
-                    if sdl2.SDL_GameControllerAddMappingsFromFile(config_str) == -1:
+                    file_path_bytes = config_str.encode("utf-8")
+                    result = sdl2.SDL_GameControllerAddMappingsFromFile(file_path_bytes)
+                    if result == -1:
                         print(
                             f"Warning: Could not load file {config_str}: {sdl2.SDL_GetError().decode()}"
                         )
                     else:
-                        print(f"Loaded controller mappings from file {config_str}")
+                        print(
+                            f"Loaded {result} controller mappings from file {config_str}"
+                        )
                 else:
                     print(f"Warning: Controller config file {config_str} not found")
+
+            print("No controller mappings loaded - using SDL defaults")
 
     def _add_key_pressed(self, key_name: str) -> None:
         """Add a key to the pressed set"""

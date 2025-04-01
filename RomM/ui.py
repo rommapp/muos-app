@@ -39,6 +39,7 @@ class UserInterface:
     def __init__(self):
         self.window = self._create_window()
         self.renderer = self._create_renderer()
+        self.draw_start()
 
     def __new__(cls):
         if not cls._instance:
@@ -59,7 +60,7 @@ class UserInterface:
         self.active_draw = ImageDraw.Draw(self.active_image)
 
     def _create_window(self):
-        self.window = sdl2.SDL_CreateWindow(
+        window = sdl2.SDL_CreateWindow(
             "RomM".encode("utf-8"),
             sdl2.SDL_WINDOWPOS_UNDEFINED,
             sdl2.SDL_WINDOWPOS_UNDEFINED,
@@ -68,18 +69,22 @@ class UserInterface:
             sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_SHOWN,
         )
 
-        if not self.window:
+        if not window:
             print(f"Failed to create window: {sdl2.SDL_GetError()}")
             raise RuntimeError("Failed to create window")
 
+        return window
+
     def _create_renderer(self):
-        self.renderer = sdl2.SDL_CreateRenderer(
+        renderer = sdl2.SDL_CreateRenderer(
             self.window, -1, sdl2.SDL_RENDERER_ACCELERATED
         )
 
-        if not self.renderer:
+        if not renderer:
             print(f"Failed to create renderer: {sdl2.SDL_GetError()}")
             raise RuntimeError("Failed to create renderer")
+
+        return renderer
 
     def render_to_screen(self):
         # Convert PIL image to SDL2 texture at base resolution
