@@ -25,6 +25,7 @@ mkdir -p "${LOG_DIR}"
 
 cd "${GAMEDIR}" || exit
 
+# trunk-ignore(shellcheck/SC2155)
 export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
