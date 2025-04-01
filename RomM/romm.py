@@ -426,13 +426,8 @@ class RomM:
                         ),
                     ),
                 ]
-                is_in_device = os.path.exists(
-                    os.path.join(
-                        self.fs.get_platforms_storage_path(selected_rom.platform_slug),
-                        selected_rom.fs_name,
-                    )
-                )
-                if is_in_device:
+
+                if self.fs.is_rom_in_device(selected_rom):
                     self.contextual_menu_options.append(
                         (
                             f"{glyphs.delete} Remove from device",
