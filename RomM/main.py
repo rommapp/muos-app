@@ -16,38 +16,44 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
 
+from romm import RomM
+
+
+def cleanup(romm: RomM):
+    romm.ui.cleanup()
+    romm.input.cleanup()
+
+    sys.stdout.close()
+    sys.exit(0)
+
 
 def main():
-    from romm import RomM
-
     # Initialize SDL2 with video and joystick support
-    if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_JOYSTICK) < 0:
+    if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_GAMECONTROLLER) < 0:
         print(f"SDL2 initialization failed: {sdl2.SDL_GetError()}")
         sys.exit(1)
-    sdl2.SDL_GameControllerEventState(sdl2.SDL_ENABLE)
 
     romm = RomM()
     romm.start()
 
-    while romm.running:
-        # Render directly to the screen
-        sdl2.SDL_SetRenderDrawColor(romm.ui.renderer, 0, 0, 0, 255)
-        sdl2.SDL_RenderClear(romm.ui.renderer)
+    try:
+        while romm.running:
+            # Render directly to the screen
+            sdl2.SDL_SetRenderDrawColor(romm.ui.renderer, 0, 0, 0, 255)
+            sdl2.SDL_RenderClear(romm.ui.renderer)
 
-        romm.ui.draw_start()  # Render at 640x480
-        romm.update()  # Draw content
-        romm.ui.render_to_screen()  # Render to the screen
+            romm.ui.draw_start()  # Render at 640x480
+            romm.update()  # Draw content
+            romm.ui.render_to_screen()  # Render to the screen
 
-        # Add a small sleep to prevent 100% CPU usage
-        sdl2.SDL_Delay(16)
+            # Add a small sleep to prevent 100% CPU usage
+            sdl2.SDL_Delay(16)
+    except RuntimeError:
+        cleanup(romm)
 
     # Cleanup
     print("Exiting...")
-    sdl2.SDL_DestroyRenderer(romm.ui.renderer)
-    sdl2.SDL_DestroyWindow(romm.ui.window)
-    sdl2.SDL_Quit()
-    sys.stdout.close()
-    sys.exit(0)
+    cleanup(romm)
 
 
 if __name__ == "__main__":

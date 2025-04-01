@@ -69,10 +69,10 @@ connect:
 
 upload:
     just connect
-    if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group -e "ssh -i \"$PRIVATE_KEY_PATH\"" .build/RomM root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/MUOS/application/; echo "Upload successful"; exit 0; fi
-    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group -e ssh .build/RomM root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/MUOS/application/; echo "Upload successful"; exit 0; fi
+    if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group --exclude 'deps' --exclude 'libs' -e "ssh -i \"$PRIVATE_KEY_PATH\"" .build/RomM root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/MUOS/application/; echo "Upload successful"; exit 0; fi
+    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group --exclude 'deps' --exclude 'libs' -e ssh .build/RomM root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/MUOS/application/; echo "Upload successful"; exit 0; fi
 
 upload-app:
     just connect
     if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group -e "ssh -i \"$PRIVATE_KEY_PATH\"" .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
-    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group -e ssh .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
+    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group -e ssh  .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi

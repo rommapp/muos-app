@@ -1,7 +1,6 @@
 import ctypes
 import os
 import shutil
-import sys
 import time
 from typing import Optional
 
@@ -12,7 +11,7 @@ from models import Collection, Platform, Rom
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
 
-fontFile = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 15)}
+FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 15)}
 
 color_violet = "#ad3c6b"
 color_green = "#41aa3b"
@@ -32,21 +31,23 @@ class UserInterface:
 
     screen_width = 640
     screen_height = 480
-    font_file = fontFile
+    font_file = FONT_FILE
 
-    activeImage: Image.Image
-    activeDraw: ImageDraw.ImageDraw
+    active_image: Image.Image
+    active_draw: ImageDraw.ImageDraw
 
     def __init__(self):
         self.window = self._create_window()
         self.renderer = self._create_renderer()
-        self.activeImage = self.create_image()
-        self.activeDraw = ImageDraw.Draw(self.activeImage)
 
     def __new__(cls):
         if not cls._instance:
             cls._instance = super(UserInterface, cls).__new__(cls)
         return cls._instance
+
+    ###
+    # WINDOW MANAGEMENT
+    ###
 
     def create_image(self):
         """Create a new blank RGBA image for drawing."""
@@ -54,26 +55,79 @@ class UserInterface:
 
     def draw_start(self):
         """Initialize drawing for a new frame."""
-        self.activeImage = self.create_image()
-        self.activeDraw = ImageDraw.Draw(self.activeImage)
+        self.active_image = self.create_image()
+        self.active_draw = ImageDraw.Draw(self.active_image)
 
-    def screen_reset(self):
-        """Clear the screen to black."""
-        self.activeDraw.rectangle(
-            [0, 0, self.screen_width, self.screen_height], fill="black"
+    def _create_window(self):
+        self.window = sdl2.SDL_CreateWindow(
+            "RomM".encode("utf-8"),
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            sdl2.SDL_WINDOWPOS_UNDEFINED,
+            0,
+            0,  # Size ignored in fullscreen mode
+            sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_SHOWN,
         )
 
-    def draw_active(self, image):  # Fixed syntax: added 'self'
-        """Set the active image and draw context."""
-        self.activeImage = image
-        self.activeDraw = ImageDraw.Draw(self.activeImage)  # Use self.activeImage
+        if not self.window:
+            print(f"Failed to create window: {sdl2.SDL_GetError()}")
+            raise RuntimeError("Failed to create window")
 
-    def get_image(self):
-        """Return the current image for rendering in main.py."""
-        return self.activeImage
+    def _create_renderer(self):
+        self.renderer = sdl2.SDL_CreateRenderer(
+            self.window, -1, sdl2.SDL_RENDERER_ACCELERATED
+        )
+
+        if not self.renderer:
+            print(f"Failed to create renderer: {sdl2.SDL_GetError()}")
+            raise RuntimeError("Failed to create renderer")
+
+    def render_to_screen(self):
+        # Convert PIL image to SDL2 texture at base resolution
+        rgba_data = self.active_image.tobytes()
+        surface = sdl2.SDL_CreateRGBSurfaceWithFormatFrom(
+            rgba_data,
+            self.screen_width,
+            self.screen_height,
+            32,
+            self.screen_width * 4,
+            sdl2.SDL_PIXELFORMAT_RGBA32,
+        )
+        texture = sdl2.SDL_CreateTextureFromSurface(self.renderer, surface)
+        sdl2.SDL_FreeSurface(surface)
+
+        # Get current window size for scaling
+        window_width = ctypes.c_int()
+        window_height = ctypes.c_int()
+        sdl2.SDL_GetWindowSize(
+            self.window, ctypes.byref(window_width), ctypes.byref(window_height)
+        )
+        window_width, window_height = window_width.value, window_height.value
+
+        # Calculate scaling to fit fullscreen while preserving 4:3 aspect ratio
+        scale = min(
+            window_width / self.screen_width, window_height / self.screen_height
+        )
+        dst_width = int(self.screen_width * scale)
+        dst_height = int(self.screen_height * scale)
+        dst_x = (window_width - dst_width) // 2
+        dst_y = (window_height - dst_height) // 2
+        dst_rect = sdl2.SDL_Rect(dst_x, dst_y, dst_width, dst_height)
+
+        sdl2.SDL_RenderCopy(self.renderer, texture, None, dst_rect)
+        sdl2.SDL_RenderPresent(self.renderer)
+        sdl2.SDL_DestroyTexture(texture)
+
+    def cleanup(self):
+        sdl2.SDL_DestroyRenderer(self.renderer)
+        sdl2.SDL_DestroyWindow(self.window)
+        sdl2.SDL_Quit()
+
+    ###
+    # DRAWING FUNCTIONS
+    ###
 
     def draw_clear(self):
-        self.activeDraw.rectangle(
+        self.active_draw.rectangle(
             [0, 0, self.screen_width, self.screen_height], fill="black"
         )
 
@@ -85,7 +139,7 @@ class UserInterface:
         color: str = "white",
         **kwargs,
     ):
-        self.activeDraw.text(
+        self.active_draw.text(
             position, text, font=self.font_file[font], fill=color, **kwargs
         )
 
@@ -96,7 +150,7 @@ class UserInterface:
         outline: str | None = None,
         width: int = 1,
     ):
-        self.activeDraw.rectangle(position, fill=fill, outline=outline, width=width)
+        self.active_draw.rectangle(position, fill=fill, outline=outline, width=width)
 
     def draw_rectangle_r(
         self,
@@ -105,7 +159,7 @@ class UserInterface:
         fill: str | None = None,
         outline: str | None = None,
     ):
-        self.activeDraw.rounded_rectangle(position, radius, fill=fill, outline=outline)
+        self.active_draw.rounded_rectangle(position, radius, fill=fill, outline=outline)
 
     def row_list(
         self,
@@ -136,7 +190,7 @@ class UserInterface:
         if icon:
             margin_left_icon = 10
             margin_top_icon = 5
-            self.activeImage.paste(
+            self.active_image.paste(
                 icon,
                 (position[0] + margin_left_icon, position[1] + margin_top_icon),
                 mask=icon if icon.mode == "RGBA" else None,
@@ -153,7 +207,7 @@ class UserInterface:
         fill: str | None = None,
         outline: str | None = "white",
     ):
-        self.activeDraw.ellipse(
+        self.active_draw.ellipse(
             [
                 position[0] - radius,
                 position[1] - radius,
@@ -271,9 +325,9 @@ class UserInterface:
     def draw_header(self, host: str, username: str):
         username = username if len(username) <= 22 else username[:19] + "..."
         logo = Image.open(os.path.join(os.getcwd(), "resources/romm.png"))
-        pos_logo = [15, 7]
+        pos_logo = [15, 15]
         pos_text = [55, 9]
-        self.activeImage.paste(
+        self.active_image.paste(
             logo, (pos_logo[0], pos_logo[1]), mask=logo if logo.mode == "RGBA" else None
         )
 
@@ -302,7 +356,7 @@ class UserInterface:
                 margin_top_profile_pic,
             ]
 
-            self.activeImage.paste(
+            self.active_image.paste(
                 profile_pic,
                 (pos_profile_pic[0], pos_profile_pic[1]),
                 mask=profile_pic if profile_pic.mode == "RGBA" else None,
@@ -511,67 +565,3 @@ class UserInterface:
             fill=color_gray_2,
             outline=color_violet,
         )
-
-    def _create_window(self):
-        window = sdl2.SDL_CreateWindow(
-            "RomM".encode("utf-8"),
-            sdl2.SDL_WINDOWPOS_UNDEFINED,
-            sdl2.SDL_WINDOWPOS_UNDEFINED,
-            0,
-            0,  # Size ignored in fullscreen mode
-            sdl2.SDL_WINDOW_FULLSCREEN_DESKTOP | sdl2.SDL_WINDOW_SHOWN,
-        )
-
-        if not window:
-            print(f"Failed to create window: {sdl2.SDL_GetError()}")
-            sys.exit(1)
-
-        return window
-
-    def _create_renderer(self):
-        renderer = sdl2.SDL_CreateRenderer(
-            self.window, -1, sdl2.SDL_RENDERER_ACCELERATED
-        )
-
-        if not renderer:
-            print(f"Failed to create renderer: {sdl2.SDL_GetError()}")
-            sys.exit(1)
-
-        return renderer
-
-    def render_to_screen(self):
-        # Convert PIL image to SDL2 texture at base resolution
-        image = self.get_image()
-        rgba_data = image.tobytes()
-        surface = sdl2.SDL_CreateRGBSurfaceWithFormatFrom(
-            rgba_data,
-            self.screen_width,
-            self.screen_height,
-            32,
-            self.screen_width * 4,
-            sdl2.SDL_PIXELFORMAT_RGBA32,
-        )
-        texture = sdl2.SDL_CreateTextureFromSurface(self.renderer, surface)
-        sdl2.SDL_FreeSurface(surface)
-
-        # Get current window size for scaling
-        window_width = ctypes.c_int()
-        window_height = ctypes.c_int()
-        sdl2.SDL_GetWindowSize(
-            self.window, ctypes.byref(window_width), ctypes.byref(window_height)
-        )
-        window_width, window_height = window_width.value, window_height.value
-
-        # Calculate scaling to fit fullscreen while preserving 4:3 aspect ratio
-        scale = min(
-            window_width / self.screen_width, window_height / self.screen_height
-        )
-        dst_width = int(self.screen_width * scale)
-        dst_height = int(self.screen_height * scale)
-        dst_x = (window_width - dst_width) // 2
-        dst_y = (window_height - dst_height) // 2
-        dst_rect = sdl2.SDL_Rect(dst_x, dst_y, dst_width, dst_height)
-
-        sdl2.SDL_RenderCopy(self.renderer, texture, None, dst_rect)
-        sdl2.SDL_RenderPresent(self.renderer)
-        sdl2.SDL_DestroyTexture(texture)

@@ -21,9 +21,8 @@ class Filter:
 
 class StartMenuOptions:
     ABORT_DOWNLOAD = (f"{glyphs.abort} Abort downloads", 0)
-    # Disable SD switching for the time being (needs rework)
-    # SD_SWITCH = (f"{glyphs.microsd} Switch SD", 1)
-    EXIT = (f"{glyphs.exit} Exit", 1)
+    SD_SWITCH = (f"{glyphs.microsd} Switch SD", 1)
+    EXIT = (f"{glyphs.exit} Exit", 2)
 
 
 class Status:

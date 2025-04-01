@@ -31,7 +31,6 @@ export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
 
 # Run the app
-${GPTOKEYB} "python" -c "config/romm.gptk" &
 pm_platform_helper "python" >dev/null
 python main.py
 

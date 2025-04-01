@@ -226,7 +226,7 @@ class RomM:
             self.status.current_view = View.PLATFORMS
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            if self.status.show_contextual_menu:
+            if self.status.show_contextual_menu and len(self.status.collections) > 0:
                 self.contextual_menu_options = [
                     (
                         f"{glyphs.about} Collection info",
@@ -236,6 +236,8 @@ class RomM:
                         ),
                     ),
                 ]
+            else:
+                self.contextual_menu_options = []
         else:
             self.collections_selected_position = self.input.handle_navigation(
                 self.collections_selected_position,
@@ -244,7 +246,11 @@ class RomM:
             )
 
     def _render_roms_view(self):
-        if self.status.selected_platform:
+        if len(self.status.roms) == 0 and self.status.roms_ready.is_set():
+            header_text = "No ROMs available"
+            header_color = color_red
+            prepend_platform_slug = False
+        elif self.status.selected_platform:
             header_text = self.status.platforms[
                 self.platforms_selected_position
             ].display_name
@@ -256,11 +262,19 @@ class RomM:
             ].name
             header_color = color_yellow
             prepend_platform_slug = True
+        else:
+            header_text = "ROMs"
+            header_color = color_violet
+            prepend_platform_slug = False
+
         total_pages = (
             len(self.status.roms_to_show) + self.max_n_roms - 1
         ) // self.max_n_roms
         current_page = (self.roms_selected_position // self.max_n_roms) + 1
         header_text += f" [{current_page if total_pages > 0 else 0}/{total_pages}]"
+
+        if len(self.status.multi_selected_roms) > 0:
+            header_text += f" ({len(self.status.multi_selected_roms)} selected)"
         if self.status.current_filter == Filter.ALL:
             self.status.roms_to_show = self.status.roms
         elif self.status.current_filter == Filter.LOCAL:
@@ -271,6 +285,7 @@ class RomM:
             self.status.roms_to_show = [
                 r for r in self.status.roms if not self.fs.is_rom_in_device(r)
             ]
+
         self.ui.draw_roms_list(
             self.roms_selected_position,
             self.max_n_roms,
@@ -280,6 +295,7 @@ class RomM:
             self.status.multi_selected_roms,
             prepend_platform_slug=prepend_platform_slug,
         )
+
         if not self.status.roms_ready.is_set():
             current_time = time.time()
             if current_time - self.last_spinner_update >= self.spinner_speed:
@@ -323,13 +339,12 @@ class RomM:
                 color=color_blue,
             )
             self.ui.button_circle(
-                (435 + (len(self.status.current_filter) * 9), 460),
+                (435 + (len(str(self.status.current_filter)) * 9), 460),
                 "R1",
                 (
                     "Deselect all"
-                    if len(self.status.multi_selected_roms) > 0
-                    and len(self.status.multi_selected_roms)
-                    >= len(self.status.roms_to_show)
+                    if len(self.status.multi_selected_roms)
+                    == len(self.status.roms_to_show)
                     else "Select all"
                 ),
                 color=color_gray_1,
@@ -340,9 +355,9 @@ class RomM:
             if (
                 self.status.roms_ready.is_set()
                 and self.status.download_rom_ready.is_set()
+                and len(self.status.roms_to_show) > 0
             ):
                 self.status.download_rom_ready.clear()
-                # If no game is "multi-selected" the current game is added to the download list
                 if len(self.status.multi_selected_roms) == 0:
                     self.status.multi_selected_roms.append(
                         self.status.roms_to_show[self.roms_selected_position]
@@ -362,9 +377,6 @@ class RomM:
                 self.status.selected_virtual_collection = None
             else:
                 self.status.current_view = View.PLATFORMS
-                self.status.selected_platform = None
-                self.status.selected_collection = None
-                self.status.selected_virtual_collection = None
             self.status.reset_roms_list()
             self.roms_selected_position = 0
             self.status.multi_selected_roms = []
@@ -382,21 +394,18 @@ class RomM:
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
         elif self.input.key("SELECT"):
-            if self.status.download_rom_ready.is_set():
-                if (
-                    self.status.roms_to_show[self.roms_selected_position]
-                    not in self.status.multi_selected_roms
-                ):
-                    self.status.multi_selected_roms.append(
-                        self.status.roms_to_show[self.roms_selected_position]
-                    )
+            if (
+                self.status.download_rom_ready.is_set()
+                and len(self.status.roms_to_show) > 0
+            ):
+                selected_rom = self.status.roms_to_show[self.roms_selected_position]
+                if selected_rom not in self.status.multi_selected_roms:
+                    self.status.multi_selected_roms.append(selected_rom)
                 else:
-                    self.status.multi_selected_roms.remove(
-                        self.status.roms_to_show[self.roms_selected_position]
-                    )
+                    self.status.multi_selected_roms.remove(selected_rom)
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            if self.status.show_contextual_menu:
+            if self.status.show_contextual_menu and len(self.status.roms_to_show) > 0:
                 selected_rom = self.status.roms_to_show[self.roms_selected_position]
                 self.contextual_menu_options = [
                     (
@@ -421,17 +430,15 @@ class RomM:
                             lambda: os.remove(
                                 os.path.join(
                                     self.fs.get_storage_platform_path(
-                                        self.status.roms_to_show[
-                                            self.roms_selected_position
-                                        ].platform_slug
+                                        selected_rom.platform_slug
                                     ),
-                                    self.status.roms_to_show[
-                                        self.roms_selected_position
-                                    ].fs_name,
+                                    selected_rom.fs_name,
                                 )
                             ),
                         ),
                     )
+            else:
+                self.contextual_menu_options = []
         else:
             self.roms_selected_position = self.input.handle_navigation(
                 self.roms_selected_position,
@@ -446,33 +453,14 @@ class RomM:
         n_options = len(self.contextual_menu_options)
         option_height = 32
         gap = 3
-        if self.status.current_view == View.PLATFORMS:
-            self.ui.draw_menu_background(
-                pos,
-                width,
-                n_options,
-                option_height,
-                gap,
-                padding,
-            )
-        elif self.status.current_view == View.COLLECTIONS:
-            self.ui.draw_menu_background(
-                pos, width, n_options, option_height, gap, padding
-            )
-        elif self.status.current_view == View.ROMS:
-            self.ui.draw_menu_background(
-                pos, width, n_options, option_height, gap, padding
-            )
-        else:
-            self.ui.draw_menu_background(
-                pos, width, n_options, option_height, gap, padding
-            )
+
+        self.ui.draw_menu_background(pos, width, n_options, option_height, gap, padding)
+
         n_options = len(self.contextual_menu_options)
         if n_options == 0:  # Avoid division by zero when menu is empty
             return
-        start_idx = int(self.contextual_menu_selected_position / n_options) * n_options
-        end_idx = start_idx + n_options
-        for i, option in enumerate(self.contextual_menu_options[start_idx:end_idx]):
+
+        for i, option in enumerate(self.contextual_menu_options):
             is_selected = i == (self.contextual_menu_selected_position % n_options)
             self.ui.row_list(
                 option[0],
@@ -484,10 +472,13 @@ class RomM:
 
     def _update_contextual_menu(self):
         if self.input.key("A"):
-            self.contextual_menu_options[self.contextual_menu_selected_position][2]()
-            self.status.show_contextual_menu = False
+            if len(self.contextual_menu_options) > 0:
+                self.contextual_menu_options[self.contextual_menu_selected_position][
+                    2
+                ]()
+                self.status.show_contextual_menu = False
         elif self.input.key("B"):
-            self.status.show_contextual_menu = not self.status.show_contextual_menu
+            self.status.show_contextual_menu = False
             self.contextual_menu_options = []
         else:
             self.contextual_menu_selected_position = self.input.handle_navigation(
@@ -504,8 +495,8 @@ class RomM:
         option_height = 32
         gap = 3
         title = "Main menu"
-        title_x_adjustement = 35
-        version_x_adjustement = 50 / 6 * (len(version) + 2)
+        title_x_adjustment = 35
+        version_x_adjustment = 50 / 6 * (len(version) + 2)
         version_height = 20
         self.ui.draw_menu_background(
             pos,
@@ -517,9 +508,8 @@ class RomM:
             extra_top_offset=version_height,
             extra_bottom_offset=version_height,
         )
-        start_idx = int(self.start_menu_selected_position / n_options) * n_options
-        end_idx = start_idx + n_options
-        for i, option in enumerate(self.start_menu_options[start_idx:end_idx]):
+
+        for i, option in enumerate(self.start_menu_options):
             is_selected = i == (self.start_menu_selected_position % n_options)
             self.ui.row_list(
                 option[0],
@@ -530,14 +520,14 @@ class RomM:
             )
         self.ui.draw_text(
             (
-                pos[0] + width - version_x_adjustement,
+                pos[0] + width - version_x_adjustment,
                 pos[1] + padding + len(self.start_menu_options) * (option_height + gap),
             ),
             f"v{version}",
         )
         self.ui.draw_text(
             (
-                pos[0] + width / 2 - title_x_adjustement,
+                pos[0] + width / 2 - title_x_adjustment,
                 pos[1] - option_height + version_height - padding,
             ),
             title,
@@ -548,23 +538,25 @@ class RomM:
             if self.start_menu_selected_position == StartMenuOptions.ABORT_DOWNLOAD[1]:
                 self.status.abort_download.set()
                 self.status.show_start_menu = False
-            # SD switching temporarily disabled
-            # elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
-            # current = self.fs.get_sd_storage()
-            # self.fs.switch_sd_storage()
-            # new = self.fs.get_sd_storage()
-            # if new == current:
-            # self.ui.draw_log(
-            # text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
-            # text_color=color_red,
-            # )
-            # else:
-            # self.ui.draw_log(
-            # text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
-            # text_color=color_green,
-            # )
+            elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
+                self.status.show_start_menu = False
+                # current = self.fs.get_sd_storage()
+                # self.fs.switch_sd_storage()
+                # new = self.fs.get_sd_storage()
+                # if new == current:
+                #     self.ui.draw_log(
+                #         text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
+                #         text_color=color_red,
+                #     )
+                # else:
+                #     self.ui.draw_log(
+                #         text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
+                #         text_color=color_green,
+                #     )
+                # self.input.reset_input()
             elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
                 self.running = False
+                self.status.show_start_menu = False
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
         else:
@@ -575,7 +567,9 @@ class RomM:
             )
 
     def _update_common(self):
-        if self.input.key("MENUF") and not self.status.show_contextual_menu:
+        if (
+            self.input.key("MENUF") or self.input.key("SELECT")
+        ) and not self.status.show_contextual_menu:
             self.status.show_start_menu = not self.status.show_start_menu
         if self.input.key("START") and not self.status.show_start_menu:
             self.status.show_contextual_menu = not self.status.show_contextual_menu
@@ -584,9 +578,9 @@ class RomM:
         while self.running:
             events = sdl2.ext.get_events()
             for event in events:
+                self.input.check(event)
                 if event.type == sdl2.SDL_QUIT:
                     self.running = False
-                self.input.check(event)
 
             sdl2.SDL_Delay(1)  # Delay to prevent high CPU usage
 

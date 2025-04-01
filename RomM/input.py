@@ -1,43 +1,37 @@
+import os
 import time
 from threading import Lock
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import sdl2
 
 
 class Input:
     _instance: Optional["Input"] = None
+
     _key_mapping = {
-        # muOS
-        3: "A",
-        4: "B",
-        5: "Y",
-        6: "X",
-        7: "L1",
-        8: "R1",
-        13: "L2",
-        14: "R2",
-        9: "SELECT",
-        10: "START",
-        16: "MENUF",
-        # EmulationStation
-        sdl2.SDLK_UP: "DY",
-        sdl2.SDLK_DOWN: "DY",
-        sdl2.SDLK_LEFT: "DX",
-        sdl2.SDLK_RIGHT: "DX",
-        sdl2.SDLK_a: "A",
-        sdl2.SDLK_b: "B",
-        sdl2.SDLK_y: "Y",
-        sdl2.SDLK_x: "X",
-        sdl2.SDLK_l: "L1",
-        sdl2.SDLK_r: "R1",
-        sdl2.SDLK_q: "L2",
-        sdl2.SDLK_e: "R2",
-        sdl2.SDLK_ESCAPE: "SELECT",
-        sdl2.SDLK_RETURN: "START",
-        sdl2.SDLK_m: "MENUF",
-        sdl2.SDLK_PLUS: "V+",
-        sdl2.SDLK_MINUS: "V-",
+        sdl2.SDL_CONTROLLER_BUTTON_A: "A",
+        sdl2.SDL_CONTROLLER_BUTTON_B: "B",
+        sdl2.SDL_CONTROLLER_BUTTON_X: "X",
+        sdl2.SDL_CONTROLLER_BUTTON_Y: "Y",
+        sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER: "L1",
+        sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: "R1",
+        sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK: "L3",
+        sdl2.SDL_CONTROLLER_BUTTON_RIGHTSTICK: "R3",
+        sdl2.SDL_CONTROLLER_BUTTON_BACK: "SELECT",
+        sdl2.SDL_CONTROLLER_BUTTON_START: "START",
+        sdl2.SDL_CONTROLLER_BUTTON_GUIDE: "MENUF",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP: "DY-",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN: "DY+",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT: "DX-",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT: "DX+",
+    }
+
+    _axis_mapping = {
+        sdl2.SDL_CONTROLLER_AXIS_LEFTX: "DX",
+        sdl2.SDL_CONTROLLER_AXIS_LEFTY: "DY",
+        sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT: "L2",
+        sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT: "R2",
     }
 
     def __new__(cls):
@@ -60,50 +54,55 @@ class Input:
         # Key repeat settings
         self._initial_delay = 0.35
 
-        # Enable joystick events
+        # Enable controller events
+        self._load_controller_mappings()
+        sdl2.SDL_GameControllerEventState(sdl2.SDL_ENABLE)
         sdl2.SDL_JoystickEventState(sdl2.SDL_ENABLE)
 
-        # Open joysticks
-        self.joysticks = []
-        num_joysticks = sdl2.SDL_NumJoysticks()
-        print(f"Found {num_joysticks} joystick(s)")
+        # Open controllers
+        self.controllers: list[Any] = []
 
-        for i in range(num_joysticks):
-            joystick = sdl2.SDL_JoystickOpen(i)
-            if joystick:
-                name = sdl2.SDL_JoystickName(joystick).decode("utf-8")
-                self.joysticks.append(joystick)
+        num_controllers = sdl2.SDL_NumJoysticks()
+        print(f"Found {num_controllers} controller(s)")
 
-                axes = sdl2.SDL_JoystickNumAxes(joystick)
-                buttons = sdl2.SDL_JoystickNumButtons(joystick)
-                hats = sdl2.SDL_JoystickNumHats(joystick)
+        for i in range(num_controllers):
+            if sdl2.SDL_IsGameController(i):
+                controller = sdl2.SDL_GameControllerOpen(i)
+                if controller:
+                    name = sdl2.SDL_GameControllerName(controller).decode("utf-8")
+                    self.controllers.append(controller)
+                    print(f"Found game controller {i}: {name}")
+            else:
+                print(f"Joystick {i} is not a recognized game controller")
 
-                print(f"Joystick {i}: {name}")
-                print(f"  - Axes: {axes}")
-                print(f"  - Buttons: {buttons}")
-                print(f"  - Hats: {hats}")
+        if not self.controllers:
+            print("No game controllers found.")
+            raise RuntimeError("No game controllers found.")
 
-    def _hat_value_to_string(self, value):
-        """Convert hat value to human-readable direction"""
-        if value == 0:
-            return "CENTER"
-        if value == 1:
-            return "UP"
-        if value == 2:
-            return "RIGHT"
-        if value == 3:
-            return "UP+RIGHT"
-        if value == 4:
-            return "DOWN"
-        if value == 6:
-            return "DOWN+RIGHT"
-        if value == 8:
-            return "LEFT"
-        if value == 9:
-            return "UP+LEFT"
-        if value == 12:
-            return "DOWN+LEFT"
-        return f"UNKNOWN({value})"
+    def _load_controller_mappings(self) -> None:
+        """Load controller mappings from environment variable or fallback file."""
+        config_path = sdl2.SDL_getenv(b"SDL_GAMECONTROLLERCONFIG")
+        if config_path:
+            config_str = config_path.decode("utf-8")
+            if "," in config_str and not config_str.endswith((".txt", ".cfg")):
+                # Treat as mapping string
+                if sdl2.SDL_GameControllerAddMapping(config_str.encode("utf-8")) == -1:
+                    print(
+                        f"Warning: Failed to load mapping from environment: {sdl2.SDL_GetError().decode()}"
+                    )
+                else:
+                    print("Loaded controller mapping from environment")
+            else:
+                # Treat as file path
+                if os.path.exists(config_str):
+                    if sdl2.SDL_GameControllerAddMappingsFromFile(config_str) == -1:
+                        print(
+                            f"Warning: Could not load file {config_str}: {sdl2.SDL_GetError().decode()}"
+                        )
+                    else:
+                        print(f"Loaded controller mappings from file {config_str}")
+                else:
+                    print(f"Warning: Controller config file {config_str} not found")
 
     def _add_key_pressed(self, key_name: str) -> None:
         """Add a key to the pressed set"""
@@ -125,28 +124,9 @@ class Input:
         Returns if an event was processed
         """
         if event:
-            # Generic keydown event
-            if event.type == sdl2.SDL_KEYDOWN:
-                key = event.key.keysym.sym
-                # Map key to button name using the _key_mapping dictionary
-                if key in self._key_mapping:
-                    key_name = self._key_mapping[key]
-                    self._add_key_pressed(key_name)
-                    print(f"Key pressed: {key_name}")
-                    return True
-
-            # Generic keyup event
-            elif event.type == sdl2.SDL_KEYUP:
-                key = event.key.keysym.sym
-                # Map key to button name using the _key_mapping dictionary
-                if key in self._key_mapping:
-                    key_name = self._key_mapping[key]
-                    self._remove_key_pressed(key_name)
-                    print(f"Key released: {key_name}")
-
-            # Joystick button press
-            if event.type == sdl2.SDL_JOYBUTTONDOWN:
-                button = event.jbutton.button
+            # Controller button press
+            if event.type == sdl2.SDL_CONTROLLERBUTTONDOWN:
+                button = event.cbutton.button
                 # Map button to key name using the _key_mapping dictionary
                 if button in self._key_mapping:
                     key_name = self._key_mapping[button]
@@ -154,9 +134,9 @@ class Input:
                     print(f"Button pressed: {key_name}")
                     return True
 
-            # Joystick button release
-            elif event.type == sdl2.SDL_JOYBUTTONUP:
-                button = event.jbutton.button
+            # Controller button release
+            elif event.type == sdl2.SDL_CONTROLLERBUTTONUP:
+                button = event.cbutton.button
 
                 # Clear the key if it was pressed
                 if button in self._key_mapping:
@@ -164,53 +144,24 @@ class Input:
                     self._remove_key_pressed(key_name)
                     print(f"Button released: {key_name}")
 
-            # Joystick axis motion
-            elif event.type == sdl2.SDL_JOYAXISMOTION:
-                axis = event.jaxis.axis
-                value = event.jaxis.value
+            # Controller axis motion
+            elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
+                axis = event.caxis.axis
+                value = event.caxis.value
 
-                # Only process significant movements (ignore small values)
-                if abs(value) > 10000:
-                    key = "DX" if axis == 0 else "DY"
-                    dir = "+" if value > 0 else "-"
-                    self._add_key_pressed(f"{key}{dir}")
-                    return True
+                if axis in self._axis_mapping:
+                    key_name = self._axis_mapping[axis]
 
-                # Reset when axis returns to center
-                elif abs(value) < 5000:
-                    if axis == 0:
-                        self._remove_key_pressed("DX+")
-                        self._remove_key_pressed("DX-")
-                    else:
-                        self._remove_key_pressed("DY+")
-                        self._remove_key_pressed("DY-")
-                    print(f"Axis centered: {key_name}")
+                    # Only process significant movements (ignore small values)
+                    if abs(value) > 10000:
+                        dir = "+" if value > 0 else "-"
+                        self._add_key_pressed(f"{key_name}{dir}")
+                        return True
 
-            # Joystick hat motion (D-pad)
-            elif event.type == sdl2.SDL_JOYHATMOTION:
-                hat = event.jhat.hat
-                value = event.jhat.value
-                direction = self._hat_value_to_string(value)
-                print(f"Hat {hat} = {direction} ({value})")
-
-                # Clear previous D-pad states
-                for key in ["DX+", "DY+", "DX-", "DY-"]:
-                    self._remove_key_pressed(key)
-
-                # Set new D-pad states
-                if value & 1:  # UP
-                    self._add_key_pressed("DY-")
-                    return True
-                elif value & 4:  # DOWN
-                    self._add_key_pressed("DY+")
-                    return True
-
-                if value & 2:  # RIGHT
-                    self._add_key_pressed("DX+")
-                    return True
-                elif value & 8:  # LEFT
-                    self._add_key_pressed("DX-")
-                    return True
+                    # Reset when axis returns to center
+                    elif abs(value) < 5000:
+                        self._remove_key_pressed(f"{key_name}+")
+                        self._remove_key_pressed(f"{key_name}-")
 
         return False
 
@@ -283,7 +234,13 @@ class Input:
 
     def cleanup(self) -> None:
         """Clean up SDL resources"""
-        for joystick in self.joysticks:
-            sdl2.SDL_JoystickClose(joystick)
+        with self._input_lock:
+            for controller in self.controllers:
+                sdl2.SDL_GameControllerClose(controller)
 
-        sdl2.SDL_QuitSubSystem(sdl2.SDL_INIT_JOYSTICK)
+            self.controllers = []  # Clear the list of controllers
+            self._keys_pressed = set()
+            self._keys_held = set()
+            self._keys_held_start_time = {}
+
+        sdl2.SDL_QuitSubSystem(sdl2.SDL_INIT_GAMECONTROLLER)
