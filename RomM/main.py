@@ -19,12 +19,12 @@ sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1
 from romm import RomM
 
 
-def cleanup(romm: RomM):
+def cleanup(romm: RomM, exit_code: int):
     romm.ui.cleanup()
     romm.input.cleanup()
 
     sys.stdout.close()
-    sys.exit(0)
+    sys.exit(exit_code)
 
 
 def main():
@@ -49,11 +49,11 @@ def main():
             # Add a small sleep to prevent 100% CPU usage
             sdl2.SDL_Delay(16)
     except RuntimeError:
-        cleanup(romm)
+        cleanup(romm, 1)
 
     # Cleanup
     print("Exiting...")
-    cleanup(romm)
+    cleanup(romm, 0)
 
 
 if __name__ == "__main__":
