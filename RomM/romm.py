@@ -3,6 +3,8 @@ import threading
 import time
 from typing import Any, Tuple
 
+import sdl2
+import sdl2.ext
 from __version__ import version
 from api import API
 from filesystem import Filesystem
@@ -51,11 +53,12 @@ class RomM:
         self.current_spinner_status = next(glyphs.spinner)
 
     def _render_platforms_view(self):
-        self.ui.draw_platforms_list(
-            self.platforms_selected_position,
-            self.max_n_platforms,
-            self.status.platforms,
-        )
+        if self.status.platforms_ready.is_set():
+            self.ui.draw_platforms_list(
+                self.platforms_selected_position,
+                self.max_n_platforms,
+                self.status.platforms,
+            )
         if not self.status.platforms_ready.is_set():
             current_time = time.time()
             if current_time - self.last_spinner_update >= self.spinner_speed:
@@ -114,15 +117,12 @@ class RomM:
                 ]
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
-            self.input.reset_input()
         elif self.input.key("Y"):
             if self.status.platforms_ready.is_set():
                 self.status.platforms_ready.clear()
                 threading.Thread(target=self.api.fetch_platforms).start()
-            self.input.reset_input()
         elif self.input.key("X"):
             self.status.current_view = View.COLLECTIONS
-            self.input.reset_input()
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
             if self.status.show_contextual_menu and len(self.status.platforms) > 0:
@@ -137,7 +137,6 @@ class RomM:
                 ]
             else:
                 self.contextual_menu_options = []
-            self.input.reset_input()
         else:
             # Reset position if list is empty to avoid out-of-bounds
             if len(self.status.platforms) == 0:
@@ -150,12 +149,13 @@ class RomM:
                 )
 
     def _render_collections_view(self):
-        self.ui.draw_collections_list(
-            self.collections_selected_position,
-            self.max_n_collections,
-            self.status.collections,
-            fill=color_yellow,
-        )
+        if self.status.collections_ready.is_set():
+            self.ui.draw_collections_list(
+                self.collections_selected_position,
+                self.max_n_collections,
+                self.status.collections,
+                fill=color_yellow,
+            )
         if not self.status.collections_ready.is_set():
             current_time = time.time()
             if current_time - self.last_spinner_update >= self.spinner_speed:
@@ -218,15 +218,12 @@ class RomM:
                     self.status.selected_collection = selected_collection
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
-            self.input.reset_input()
         elif self.input.key("Y"):
             if self.status.collections_ready.is_set():
                 self.status.collections_ready.clear()
                 threading.Thread(target=self.api.fetch_collections).start()
-            self.input.reset_input()
         elif self.input.key("X"):
             self.status.current_view = View.PLATFORMS
-            self.input.reset_input()
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
             if self.status.show_contextual_menu:
@@ -239,7 +236,6 @@ class RomM:
                         ),
                     ),
                 ]
-            self.input.reset_input()
         else:
             self.collections_selected_position = self.input.handle_navigation(
                 self.collections_selected_position,
@@ -354,7 +350,6 @@ class RomM:
                 self.status.download_queue = self.status.multi_selected_roms
                 self.status.abort_download.clear()
                 threading.Thread(target=self.api.download_rom).start()
-                self.input.reset_input()
         elif self.input.key("B"):
             if self.status.selected_platform:
                 self.status.current_view = View.PLATFORMS
@@ -373,23 +368,19 @@ class RomM:
             self.status.reset_roms_list()
             self.roms_selected_position = 0
             self.status.multi_selected_roms = []
-            self.input.reset_input()
         elif self.input.key("Y"):
             if self.status.roms_ready.is_set():
                 self.status.roms_ready.clear()
                 threading.Thread(target=self.api.fetch_roms).start()
                 self.status.multi_selected_roms = []
-            self.input.reset_input()
         elif self.input.key("X"):
             self.status.current_filter = next(self.status.filters)
             self.roms_selected_position = 0
-            self.input.reset_input()
         elif self.input.key("R1"):
             if len(self.status.multi_selected_roms) == len(self.status.roms_to_show):
                 self.status.multi_selected_roms = []
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
-            self.input.reset_input()
         elif self.input.key("SELECT"):
             if self.status.download_rom_ready.is_set():
                 if (
@@ -403,7 +394,6 @@ class RomM:
                     self.status.multi_selected_roms.remove(
                         self.status.roms_to_show[self.roms_selected_position]
                     )
-            self.input.reset_input()
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
             if self.status.show_contextual_menu:
@@ -442,7 +432,6 @@ class RomM:
                             ),
                         ),
                     )
-            self.input.reset_input()
         else:
             self.roms_selected_position = self.input.handle_navigation(
                 self.roms_selected_position,
@@ -497,11 +486,9 @@ class RomM:
         if self.input.key("A"):
             self.contextual_menu_options[self.contextual_menu_selected_position][2]()
             self.status.show_contextual_menu = False
-            self.input.reset_input()
         elif self.input.key("B"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
             self.contextual_menu_options = []
-            self.input.reset_input()
         else:
             self.contextual_menu_selected_position = self.input.handle_navigation(
                 self.contextual_menu_selected_position,
@@ -560,7 +547,6 @@ class RomM:
         if self.input.key("A"):
             if self.start_menu_selected_position == StartMenuOptions.ABORT_DOWNLOAD[1]:
                 self.status.abort_download.set()
-                self.input.reset_input()
                 self.status.show_start_menu = False
             # SD switching temporarily disabled
             # elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
@@ -577,12 +563,10 @@ class RomM:
             # text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
             # text_color=color_green,
             # )
-            # self.input.reset_input()
             elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
                 self.running = False
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
-            self.input.reset_input()
         else:
             self.start_menu_selected_position = self.input.handle_navigation(
                 self.start_menu_selected_position,
@@ -593,16 +577,25 @@ class RomM:
     def _update_common(self):
         if self.input.key("MENUF") and not self.status.show_contextual_menu:
             self.status.show_start_menu = not self.status.show_start_menu
-            self.input.reset_input()
         if self.input.key("START") and not self.status.show_start_menu:
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            self.input.reset_input()
+
+    def _monitor_input(self):
+        while self.running:
+            events = sdl2.ext.get_events()
+            for event in events:
+                self.input.check(event)
+                if event.type == sdl2.SDL_QUIT:
+                    self.running = False
+
+            sdl2.SDL_Delay(1)  # Delay to prevent high CPU usage
 
     def start(self):
         self._render_platforms_view()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
         threading.Thread(target=self.api.fetch_me).start()
+        threading.Thread(target=self._monitor_input).start()
 
     def update(self):
         self.ui.draw_clear()
@@ -615,7 +608,6 @@ class RomM:
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
-                self.input.reset_input()
             self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
@@ -628,7 +620,6 @@ class RomM:
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
-                self.input.reset_input()
             self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),

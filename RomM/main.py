@@ -19,7 +19,6 @@ sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1
 
 
 def main():
-    from input import Input
     from romm import RomM
     from ui import UserInterface
 
@@ -52,7 +51,6 @@ def main():
     base_height = 480
 
     ui = UserInterface()
-    input_handler = Input()
     # Ensure UI uses fixed base resolution
     ui.screen_width = base_width
     ui.screen_height = base_height
@@ -60,16 +58,6 @@ def main():
     romm.start()
 
     while romm.running:
-        events = sdl2.ext.get_events()
-        for event in events:
-            input_handler.check(event)
-            if event.type == sdl2.SDL_QUIT:
-                romm.running = False
-            elif event.type == sdl2.SDL_WINDOWEVENT:
-                if event.window.event == sdl2.SDL_WINDOWEVENT_RESIZED:
-                    # Don’t update ui.screen_width/height here; keep them at base resolution
-                    pass
-
         # Render directly to the screen
         sdl2.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
         sdl2.SDL_RenderClear(renderer)
