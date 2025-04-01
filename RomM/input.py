@@ -1,27 +1,37 @@
+import os
 import time
-from struct import unpack
 from threading import Lock
-from typing import Optional
+from typing import Any, Dict, Optional
+
+import sdl2
 
 
 class Input:
     _instance: Optional["Input"] = None
+
     _key_mapping = {
-        304: "A",
-        305: "B",
-        306: "Y",
-        307: "X",
-        308: "L1",
-        309: "R1",
-        314: "L2",
-        315: "R2",
-        17: "DY",
-        16: "DX",
-        310: "SELECT",
-        311: "START",
-        312: "MENUF",
-        114: "V+",
-        115: "V-",
+        sdl2.SDL_CONTROLLER_BUTTON_A: "A",
+        sdl2.SDL_CONTROLLER_BUTTON_B: "B",
+        sdl2.SDL_CONTROLLER_BUTTON_X: "X",
+        sdl2.SDL_CONTROLLER_BUTTON_Y: "Y",
+        sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER: "L1",
+        sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: "R1",
+        sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK: "L3",
+        sdl2.SDL_CONTROLLER_BUTTON_RIGHTSTICK: "R3",
+        sdl2.SDL_CONTROLLER_BUTTON_BACK: "SELECT",
+        sdl2.SDL_CONTROLLER_BUTTON_START: "START",
+        sdl2.SDL_CONTROLLER_BUTTON_GUIDE: "MENUF",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP: "DY-",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN: "DY+",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT: "DX-",
+        sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT: "DX+",
+    }
+
+    _axis_mapping = {
+        sdl2.SDL_CONTROLLER_AXIS_LEFTX: "DX",
+        sdl2.SDL_CONTROLLER_AXIS_LEFTY: "DY",
+        sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT: "L2",
+        sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT: "R2",
     }
 
     def __new__(cls):
@@ -30,152 +40,220 @@ class Input:
         return cls._instance
 
     def __init__(self) -> None:
-        self._key_code = 0
-        self._key_name = ""
-        self._key_value = 0  # 0: Released, 1: Pressed, -1: Held
-        self._input_lock = Lock()  # Lock to protect input state
-        self._last_scroll_time = 0.0  # Last time a scroll was performed
-        self._key_states: dict[str, int] = {}  # Track the state of each key
+        if hasattr(self, "_initialized"):
+            return
 
-        self._key_hold_start_time: dict[str, float] = (
-            {}
-        )  # Track when a key was first pressed
-        self._initial_delay = 0.25  # Initial delay between scrolls (slower)
-        self._min_delay = 0.05  # Minimum delay after acceleration (faster)
-        self._acceleration_time = 1.0  # Time in seconds to reach maximum speed
+        self._initialized = True
+        self._input_lock = Lock()
 
-    def check(self) -> None:
-        with open("/dev/input/event1", "rb") as f:
-            while True:
-                event = f.read(24)
-                if event:
-                    (_, _, _, kcode, kvalue) = unpack("llHHI", event)
-                    key_name = self._key_mapping.get(kcode, str(kcode))
+        # Track the state of all keys
+        self._keys_pressed: set[str] = set()
+        self._keys_held: set[str] = set()
+        self._keys_held_start_time: Dict[str, float] = {}
 
-                    # Update key state in our tracking dictionary
-                    if kvalue == 0:  # Key released
-                        self._key_states[key_name] = 0
-                        # Reset hold time when key is released
-                        if key_name in self._key_hold_start_time:
-                            del self._key_hold_start_time[key_name]
-                    else:  # Key pressed
-                        if kvalue != 1:
-                            kvalue = -1
-                        self._key_states[key_name] = kvalue
+        # Key repeat settings
+        self._initial_delay = 0.35
 
-                        # Record the time when key was first pressed
-                        if key_name not in self._key_hold_start_time:
-                            self._key_hold_start_time[key_name] = time.time()
+        # Enable controller events
+        self._load_controller_mappings()
+        sdl2.SDL_GameControllerEventState(sdl2.SDL_ENABLE)
+        sdl2.SDL_JoystickEventState(sdl2.SDL_ENABLE)
 
-                    with self._input_lock:
-                        self._key_code = kcode
-                        self._key_name = key_name
-                        self._key_value = kvalue
+        # Open controllers
+        self.controllers: list[Any] = []
 
-    def key(self, _key_name: str, _key_value: int = 99) -> bool:
-        # Check if the key is currently pressed based on our tracking dictionary
-        current_value = self._key_states.get(_key_name, 0)
+        num_controllers = sdl2.SDL_NumJoysticks()
+        print(f"Found {num_controllers} controller(s)")
 
-        if current_value != 0:
-            if _key_value != 99:
-                return current_value == _key_value
-            print(f"BUTTON: {_key_name} - {current_value}")
-            return True
+        for i in range(num_controllers):
+            if sdl2.SDL_IsGameController(i):
+                controller = sdl2.SDL_GameControllerOpen(i)
+                if controller:
+                    name = sdl2.SDL_GameControllerName(controller).decode("utf-8")
+                    self.controllers.append(controller)
+                    print(f"Found game controller {i}: {name}")
+            else:
+                print(f"Joystick {i} is not a recognized game controller")
+
+        if not self.controllers:
+            print("No game controllers found.")
+            raise RuntimeError("No game controllers found.")
+
+    def _load_controller_mappings(self) -> None:
+        """Load controller mappings from environment variable or fallback file."""
+        config_path = sdl2.SDL_getenv(b"SDL_GAMECONTROLLERCONFIG")
+        if config_path:
+            config_str = config_path.decode("utf-8")
+
+            if "," in config_str and not config_str.endswith((".txt", ".cfg")):
+                # Treat as mapping string - encode to bytes
+                mapping_bytes = config_str.encode("utf-8")
+                result = sdl2.SDL_GameControllerAddMapping(mapping_bytes)
+                if result == -1:
+                    print(
+                        f"Warning: Failed to load mapping from environment: {sdl2.SDL_GetError().decode()}"
+                    )
+                else:
+                    print("Loaded controller mapping from environment")
+            else:
+                # Treat as file path - encode to bytes for SDL function
+                if os.path.exists(config_str):
+                    file_path_bytes = config_str.encode("utf-8")
+                    result = sdl2.SDL_GameControllerAddMappingsFromFile(file_path_bytes)
+                    if result == -1:
+                        print(
+                            f"Warning: Could not load file {config_str}: {sdl2.SDL_GetError().decode()}"
+                        )
+                    else:
+                        print(
+                            f"Loaded {result} controller mappings from file {config_str}"
+                        )
+                else:
+                    print(f"Warning: Controller config file {config_str} not found")
+
+            print("No controller mappings loaded - using SDL defaults")
+
+    def _add_key_pressed(self, key_name: str) -> None:
+        """Add a key to the pressed set"""
+        with self._input_lock:
+            self._keys_pressed.add(key_name)
+            self._keys_held.add(key_name)
+            self._keys_held_start_time[key_name] = time.time()
+
+    def _remove_key_held(self, key_name: str) -> None:
+        """Remove a key from the pressed set"""
+        with self._input_lock:
+            self._keys_held.discard(key_name)
+            self._keys_held_start_time.pop(key_name, None)
+
+    def check_event(self, event=None) -> bool:
+        """
+        Check for input events and update key states
+        Returns if an event was processed
+        """
+        if event:
+            # Controller button press
+            if event.type == sdl2.SDL_CONTROLLERBUTTONDOWN:
+                button = event.cbutton.button
+                # Map button to key name using the _key_mapping dictionary
+                if button in self._key_mapping:
+                    key_name = self._key_mapping[button]
+                    self._add_key_pressed(key_name)
+                    print(f"Button pressed: {key_name}")
+                    return True
+
+            # Controller button release
+            elif event.type == sdl2.SDL_CONTROLLERBUTTONUP:
+                button = event.cbutton.button
+
+                # Clear the key if it was pressed
+                if button in self._key_mapping:
+                    key_name = self._key_mapping[button]
+                    self._remove_key_held(key_name)
+                    print(f"Button released: {key_name}")
+
+            # Controller axis motion
+            elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
+                axis = event.caxis.axis
+                value = event.caxis.value
+
+                if axis in self._axis_mapping:
+                    key_name = self._axis_mapping[axis]
+
+                    # Only process significant movements (ignore small values)
+                    if abs(value) > 10000:
+                        dir = "+" if value > 0 else "-"
+                        self._add_key_pressed(f"{key_name}{dir}")
+                        return True
+
+                    # Reset when axis returns to center
+                    elif abs(value) < 5000:
+                        self._remove_key_held(f"{key_name}+")
+                        self._remove_key_held(f"{key_name}-")
+
         return False
 
-    def _get_current_scroll_delay(self, key_name: str) -> float:
-        """Calculate the current scroll delay based on how long the key has been held."""
-        if key_name not in self._key_hold_start_time:
-            return self._initial_delay
+    def key(self, key_name: str) -> bool:
+        """Check if a specific key is pressed with an optional value check"""
+        with self._input_lock:
+            is_pressed = key_name in self._keys_pressed
+            self._keys_pressed.discard(key_name)
 
-        hold_duration = time.time() - self._key_hold_start_time[key_name]
+            if key_name in self._keys_held:
+                # Check if the key is held down
+                held_time = time.time() - self._keys_held_start_time[key_name]
+                if held_time >= self._initial_delay:
+                    is_pressed = True
 
-        # Calculate a delay that decreases over time (accelerating scroll speed)
-        if hold_duration >= self._acceleration_time:
-            return self._min_delay
-        else:
-            # Linear interpolation between initial and minimum delay
-            progress = hold_duration / self._acceleration_time
-            return self._initial_delay - progress * (
-                self._initial_delay - self._min_delay
-            )
+            return is_pressed
 
     def handle_navigation(
         self, selected_position: int, items_per_page: int, total_items: int
     ) -> int:
-        current_time = time.time()
-
-        if self.key("DY"):
-            # Get the current scroll delay based on how long the key has been held
-            current_delay = self._get_current_scroll_delay("DY")
-            if current_time - self._last_scroll_time >= current_delay:
-                self._last_scroll_time = current_time
-
-                if self._key_states.get("DY") == 1:
-                    if selected_position == total_items - 1:
-                        selected_position = 0
-                    elif selected_position < total_items - 1:
-                        selected_position += 1
-                elif self._key_states.get("DY") == -1:
-                    if selected_position == 0:
-                        selected_position = total_items - 1
-                    elif selected_position > 0:
-                        selected_position -= 1
-
-        elif self.key("DX"):
-            # Get the current scroll delay based on how long the key has been held
-            current_delay = self._get_current_scroll_delay("DX")
-            if current_time - self._last_scroll_time >= current_delay:
-                self._last_scroll_time = current_time
-
-                if self._key_states.get("DX") == 1:
-                    if selected_position < total_items - 1:
-                        if selected_position + items_per_page <= total_items - 1:
-                            selected_position = selected_position + items_per_page
-                        else:
-                            selected_position = total_items - 1
-                elif self._key_states.get("DX") == -1:
-                    if selected_position > 0:
-                        if selected_position - items_per_page >= 0:
-                            selected_position = selected_position - items_per_page
-                        else:
-                            selected_position = 0
-
+        """Handle navigation based on pressed keys"""
+        if self.key("DY+"):  # DOWN
+            if selected_position == total_items - 1:
+                selected_position = 0
+            elif selected_position < total_items - 1:
+                selected_position += 1
+        elif self.key("DY-"):  # UP
+            if selected_position == 0:
+                selected_position = total_items - 1
+            elif selected_position > 0:
+                selected_position -= 1
+        elif self.key("DX+"):  # RIGHT
+            if selected_position < total_items - 1:
+                if selected_position + items_per_page <= total_items - 1:
+                    selected_position = selected_position + items_per_page
+                else:
+                    selected_position = total_items - 1
+        elif self.key("DX-"):  # LEFT
+            if selected_position > 0:
+                if selected_position - items_per_page >= 0:
+                    selected_position = selected_position - items_per_page
+                else:
+                    selected_position = 0
         elif self.key("L1"):
             if selected_position > 0:
                 if selected_position - items_per_page >= 0:
                     selected_position = selected_position - items_per_page
                 else:
                     selected_position = 0
-            self._key_states["L1"] = 0
         elif self.key("R1"):
             if selected_position < total_items - 1:
                 if selected_position + items_per_page <= total_items - 1:
                     selected_position = selected_position + items_per_page
                 else:
                     selected_position = total_items - 1
-            self._key_states["R1"] = 0
         elif self.key("L2"):
             if selected_position > 0:
                 if selected_position - 100 >= 0:
                     selected_position = selected_position - 100
                 else:
                     selected_position = 0
-            self._key_states["L2"] = 0
         elif self.key("R2"):
             if selected_position < total_items - 1:
                 if selected_position + 100 <= total_items - 1:
                     selected_position = selected_position + 100
                 else:
                     selected_position = total_items - 1
-            self._key_states["R2"] = 0
 
         return selected_position
 
-    def reset_input(self) -> None:
+    def clear_pressed(self) -> None:
+        """Clear the pressed keys"""
         with self._input_lock:
-            self._key_name = ""
-            self._key_value = 0
-            self._key_code = 0
-            self._key_states = {}
-            self._key_hold_start_time = {}
+            self._keys_pressed.clear()
+
+    def cleanup(self) -> None:
+        """Clean up SDL resources"""
+        with self._input_lock:
+            for controller in self.controllers:
+                sdl2.SDL_GameControllerClose(controller)
+
+            self.controllers = []  # Clear the list of controllers
+            self._keys_pressed = set()
+            self._keys_held = set()
+            self._keys_held_start_time = {}
+
+        sdl2.SDL_QuitSubSystem(sdl2.SDL_INIT_GAMECONTROLLER)

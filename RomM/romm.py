@@ -1,32 +1,45 @@
 import os
-import sys
 import threading
 import time
 from typing import Any, Tuple
 
-import ui
+import sdl2
+import sdl2.ext
 from __version__ import version
 from api import API
 from filesystem import Filesystem
 from glyps import glyphs
 from input import Input
-from status import Filter, StartMenuOptions, Status, View
-from ui import colorYellow
+from status import Filter, Status, View
+from ui import (
+    UserInterface,
+    color_blue,
+    color_gray_1,
+    color_gray_2,
+    color_green,
+    color_red,
+    color_violet,
+    color_white,
+    color_yellow,
+)
+
+
+class StartMenuOptions:
+    ABORT_DOWNLOAD = f"{glyphs.abort} Abort downloads"
+    SD_SWITCH = f"{glyphs.microsd} Switch SD"
+    EXIT = f"{glyphs.exit} Exit"
 
 
 class RomM:
+    running: bool = True
     spinner_speed = 0.05
-    start_menu_options = [
-        value
-        for name, value in StartMenuOptions.__dict__.items()
-        if not name.startswith("_")
-    ]
 
     def __init__(self) -> None:
         self.api = API()
         self.fs = Filesystem()
         self.input = Input()
         self.status = Status()
+        self.ui = UserInterface()
 
         self.contextual_menu_options: list[Tuple[str, int, Any]] = []
         self.start_menu_selected_position = 0
@@ -35,53 +48,65 @@ class RomM:
         self.collections_selected_position = 0
         self.roms_selected_position = 0
 
-        self.max_n_platforms = 11
-        self.max_n_collections = 11
+        self.max_n_platforms = 10
+        self.max_n_collections = 10
         self.max_n_roms = 10
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
 
+        # Set start menu options
+        self.start_menu_options = [
+            (StartMenuOptions.ABORT_DOWNLOAD, 0),
+            (StartMenuOptions.SD_SWITCH, 1 if self.fs._sd2_roms_storage_path else -1),
+            (StartMenuOptions.EXIT, 2 if self.fs._sd2_roms_storage_path else 1),
+        ]
+
     def _render_platforms_view(self):
-        ui.draw_platforms_list(
-            self.platforms_selected_position,
-            self.max_n_platforms,
-            self.status.platforms,
-        )
+        if self.status.platforms_ready.is_set():
+            self.ui.draw_platforms_list(
+                self.platforms_selected_position,
+                self.max_n_platforms,
+                self.status.platforms,
+            )
         if not self.status.platforms_ready.is_set():
             current_time = time.time()
             if current_time - self.last_spinner_update >= self.spinner_speed:
                 self.last_spinner_update = current_time
                 self.current_spinner_status = next(glyphs.spinner)
-            ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching platforms")
+            self.ui.draw_log(
+                text_line_1=f"{self.current_spinner_status} Fetching platforms"
+            )
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                ui.draw_loader(self.status.extracted_percent, color=colorYellow)
-                ui.draw_log(
+                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
+                self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
                     background=False,
                 )
             elif self.status.downloading_rom:
-                ui.draw_loader(self.status.downloaded_percent)
-                ui.draw_log(
+                self.ui.draw_loader(self.status.downloaded_percent)
+                self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.downloaded_percent:.2f}% | {glyphs.download} {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
                     background=False,
                 )
         elif not self.status.valid_host:
-            ui.draw_log(
+            self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=ui.colorRed,
+                text_color=color_red,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
-            ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
+            self.ui.draw_log(
+                text_line_1="Error: Permission denied", text_color=color_red
+            )
             self.status.valid_credentials = True
         else:
-            ui.button_circle((20, 460), "A", "Select", color=ui.colorRed)
-            ui.button_circle((123, 460), "Y", "Refresh", color=ui.colorGreen)
-            ui.button_circle(
+            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
+            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
+            self.ui.button_circle(
                 (233, 460),
                 "X",
                 (
@@ -89,7 +114,7 @@ class RomM:
                     if self.status.current_view == View.PLATFORMS
                     else "Platforms"
                 ),
-                color=ui.colorBlue,
+                color=color_blue,
             )
 
     def _update_platforms_view(self):
@@ -102,78 +127,83 @@ class RomM:
                 ]
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
-            self.input.reset_input()
         elif self.input.key("Y"):
             if self.status.platforms_ready.is_set():
                 self.status.platforms_ready.clear()
                 threading.Thread(target=self.api.fetch_platforms).start()
-            self.input.reset_input()
         elif self.input.key("X"):
             self.status.current_view = View.COLLECTIONS
-            self.input.reset_input()
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            if self.status.show_contextual_menu:
+            if self.status.show_contextual_menu and len(self.status.platforms) > 0:
                 self.contextual_menu_options = [
                     (
                         f"{glyphs.about} Platform info",
                         0,
-                        lambda: ui.draw_log(
+                        lambda: self.ui.draw_log(
                             text_line_1=f"Platform name: {self.status.platforms[self.platforms_selected_position].display_name}"
                         ),
                     ),
                 ]
-            self.input.reset_input()
+            else:
+                self.contextual_menu_options = []
         else:
-            self.platforms_selected_position = self.input.handle_navigation(
-                self.platforms_selected_position,
-                self.max_n_platforms,
-                len(self.status.platforms),
-            )
+            # Reset position if list is empty to avoid out-of-bounds
+            if len(self.status.platforms) == 0:
+                self.platforms_selected_position = 0
+            else:
+                self.platforms_selected_position = self.input.handle_navigation(
+                    self.platforms_selected_position,
+                    self.max_n_platforms,
+                    len(self.status.platforms),
+                )
 
     def _render_collections_view(self):
-        ui.draw_collections_list(
-            self.collections_selected_position,
-            self.max_n_collections,
-            self.status.collections,
-            fill=ui.colorYellow,
-        )
+        if self.status.collections_ready.is_set():
+            self.ui.draw_collections_list(
+                self.collections_selected_position,
+                self.max_n_collections,
+                self.status.collections,
+                fill=color_yellow,
+            )
         if not self.status.collections_ready.is_set():
             current_time = time.time()
             if current_time - self.last_spinner_update >= self.spinner_speed:
                 self.last_spinner_update = current_time
                 self.current_spinner_status = next(glyphs.spinner)
-            ui.draw_log(
+            self.ui.draw_log(
                 text_line_1=f"{self.current_spinner_status} Fetching collections"
             )
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                ui.draw_loader(self.status.extracted_percent, color=colorYellow)
-                ui.draw_log(
+                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
+                self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
                     background=False,
                 )
             elif self.status.downloading_rom:
-                ui.draw_loader(self.status.downloaded_percent)
-                ui.draw_log(
+                self.ui.draw_loader(self.status.downloaded_percent)
+                self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.downloaded_percent:.2f}% | {glyphs.download} {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
                     background=False,
                 )
         elif not self.status.valid_host:
-            ui.draw_log(
+            self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=ui.colorRed,
+                text_color=color_red,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
-            ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
+            self.ui.draw_log(
+                text_line_1="Error: Permission denied", text_color=color_red
+            )
             self.status.valid_credentials = True
         else:
-            ui.button_circle((20, 460), "A", "Select", color=ui.colorRed)
-            ui.button_circle((123, 460), "Y", "Refresh", color=ui.colorGreen)
-            ui.button_circle(
+            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
+            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
+            self.ui.button_circle(
                 (233, 460),
                 "X",
                 (
@@ -181,7 +211,7 @@ class RomM:
                     if self.status.current_view == View.PLATFORMS
                     else "Platforms"
                 ),
-                color=ui.colorBlue,
+                color=color_blue,
             )
 
     def _update_collections_view(self):
@@ -189,7 +219,6 @@ class RomM:
             if self.status.roms_ready.is_set() and len(self.status.collections) > 0:
                 self.status.roms_ready.clear()
                 self.status.roms = []
-
                 selected_collection = self.status.collections[
                     self.collections_selected_position
                 ]
@@ -197,31 +226,28 @@ class RomM:
                     self.status.selected_virtual_collection = selected_collection
                 else:
                     self.status.selected_collection = selected_collection
-
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
-            self.input.reset_input()
         elif self.input.key("Y"):
             if self.status.collections_ready.is_set():
                 self.status.collections_ready.clear()
                 threading.Thread(target=self.api.fetch_collections).start()
-            self.input.reset_input()
         elif self.input.key("X"):
             self.status.current_view = View.PLATFORMS
-            self.input.reset_input()
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            if self.status.show_contextual_menu:
+            if self.status.show_contextual_menu and len(self.status.collections) > 0:
                 self.contextual_menu_options = [
                     (
                         f"{glyphs.about} Collection info",
                         0,
-                        lambda: ui.draw_log(
+                        lambda: self.ui.draw_log(
                             text_line_1=f"Collection name: {self.status.collections[self.collections_selected_position].name}"
                         ),
                     ),
                 ]
-            self.input.reset_input()
+            else:
+                self.contextual_menu_options = []
         else:
             self.collections_selected_position = self.input.handle_navigation(
                 self.collections_selected_position,
@@ -230,29 +256,35 @@ class RomM:
             )
 
     def _render_roms_view(self):
-        if self.status.selected_platform:
+        if len(self.status.roms) == 0 and self.status.roms_ready.is_set():
+            header_text = "No ROMs available"
+            header_color = color_red
+            prepend_platform_slug = False
+        elif self.status.selected_platform:
             header_text = self.status.platforms[
                 self.platforms_selected_position
             ].display_name
-            header_color = ui.colorViolet
+            header_color = color_violet
             prepend_platform_slug = False
         elif self.status.selected_collection or self.status.selected_virtual_collection:
             header_text = self.status.collections[
                 self.collections_selected_position
             ].name
-            header_color = ui.colorYellow
+            header_color = color_yellow
             prepend_platform_slug = True
+        else:
+            header_text = "ROMs"
+            header_color = color_violet
+            prepend_platform_slug = False
 
         total_pages = (
             len(self.status.roms_to_show) + self.max_n_roms - 1
         ) // self.max_n_roms
-        if total_pages > 1:
-            current_page = (self.roms_selected_position // self.max_n_roms) + 1
-            header_text += f" [{current_page}/{total_pages}]"
+        current_page = (self.roms_selected_position // self.max_n_roms) + 1
+        header_text += f" [{current_page if total_pages > 0 else 0}/{total_pages}]"
 
         if len(self.status.multi_selected_roms) > 0:
             header_text += f" ({len(self.status.multi_selected_roms)} selected)"
-
         if self.status.current_filter == Filter.ALL:
             self.status.roms_to_show = self.status.roms
         elif self.status.current_filter == Filter.LOCAL:
@@ -264,7 +296,7 @@ class RomM:
                 r for r in self.status.roms if not self.fs.is_rom_in_device(r)
             ]
 
-        ui.draw_roms_list(
+        self.ui.draw_roms_list(
             self.roms_selected_position,
             self.max_n_roms,
             self.status.roms_to_show,
@@ -273,57 +305,59 @@ class RomM:
             self.status.multi_selected_roms,
             prepend_platform_slug=prepend_platform_slug,
         )
+
         if not self.status.roms_ready.is_set():
             current_time = time.time()
             if current_time - self.last_spinner_update >= self.spinner_speed:
                 self.last_spinner_update = current_time
                 self.current_spinner_status = next(glyphs.spinner)
-            ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching roms")
+            self.ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching roms")
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                ui.draw_loader(self.status.extracted_percent, color=colorYellow)
-                ui.draw_log(
+                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
+                self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
                     background=False,
                 )
             elif self.status.downloading_rom:
-                ui.draw_loader(self.status.downloaded_percent)
-                ui.draw_log(
+                self.ui.draw_loader(self.status.downloaded_percent)
+                self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.downloaded_percent:.2f}% | {glyphs.download} {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
                     background=False,
                 )
         elif not self.status.valid_host:
-            ui.draw_log(
+            self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=ui.colorRed,
+                text_color=color_red,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
-            ui.draw_log(text_line_1="Error: Permission denied", text_color=ui.colorRed)
+            self.ui.draw_log(
+                text_line_1="Error: Permission denied", text_color=color_red
+            )
             self.status.valid_credentials = True
         else:
-            ui.button_circle((20, 460), "A", "Download", color=ui.colorRed)
-            ui.button_circle((135, 460), "B", "Back", color=ui.colorYellow)
-            ui.button_circle((215, 460), "Y", "Refresh", color=ui.colorGreen)
-            ui.button_circle(
+            self.ui.button_circle((20, 460), "A", "Download", color=color_red)
+            self.ui.button_circle((135, 460), "B", "Back", color=color_yellow)
+            self.ui.button_circle((215, 460), "Y", "Refresh", color=color_green)
+            self.ui.button_circle(
                 (320, 460),
                 "X",
                 f"Filter: {self.status.current_filter}",
-                color=ui.colorBlue,
+                color=color_blue,
             )
-            ui.button_circle(
-                (435 + (len(self.status.current_filter) * 9), 460),
+            self.ui.button_circle(
+                (435 + (len(str(self.status.current_filter)) * 9), 460),
                 "R1",
                 (
                     "Deselect all"
-                    if len(self.status.multi_selected_roms) > 0
-                    and len(self.status.multi_selected_roms)
-                    >= len(self.status.roms_to_show)
+                    if len(self.status.multi_selected_roms)
+                    == len(self.status.roms_to_show)
                     else "Select all"
                 ),
-                color=ui.colorGrayL1,
+                color=color_gray_1,
             )
 
     def _update_roms_view(self):
@@ -331,9 +365,9 @@ class RomM:
             if (
                 self.status.roms_ready.is_set()
                 and self.status.download_rom_ready.is_set()
+                and len(self.status.roms_to_show) > 0
             ):
                 self.status.download_rom_ready.clear()
-                # If no game is "multi-selected" the current game is added to the download list
                 if len(self.status.multi_selected_roms) == 0:
                     self.status.multi_selected_roms.append(
                         self.status.roms_to_show[self.roms_selected_position]
@@ -341,7 +375,6 @@ class RomM:
                 self.status.download_queue = self.status.multi_selected_roms
                 self.status.abort_download.clear()
                 threading.Thread(target=self.api.download_rom).start()
-                self.input.reset_input()
         elif self.input.key("B"):
             if self.status.selected_platform:
                 self.status.current_view = View.PLATFORMS
@@ -354,62 +387,48 @@ class RomM:
                 self.status.selected_virtual_collection = None
             else:
                 self.status.current_view = View.PLATFORMS
-                self.status.selected_platform = None
-                self.status.selected_collection = None
-                self.status.selected_virtual_collection = None
             self.status.reset_roms_list()
             self.roms_selected_position = 0
             self.status.multi_selected_roms = []
-            self.input.reset_input()
         elif self.input.key("Y"):
             if self.status.roms_ready.is_set():
                 self.status.roms_ready.clear()
                 threading.Thread(target=self.api.fetch_roms).start()
                 self.status.multi_selected_roms = []
-            self.input.reset_input()
         elif self.input.key("X"):
             self.status.current_filter = next(self.status.filters)
             self.roms_selected_position = 0
-            self.input.reset_input()
         elif self.input.key("R1"):
             if len(self.status.multi_selected_roms) == len(self.status.roms_to_show):
                 self.status.multi_selected_roms = []
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
-            self.input.reset_input()
-
         elif self.input.key("SELECT"):
-            if self.status.download_rom_ready.is_set():
-                if (
-                    self.status.roms_to_show[self.roms_selected_position]
-                    not in self.status.multi_selected_roms
-                ):
-                    self.status.multi_selected_roms.append(
-                        self.status.roms_to_show[self.roms_selected_position]
-                    )
+            if (
+                self.status.download_rom_ready.is_set()
+                and len(self.status.roms_to_show) > 0
+            ):
+                selected_rom = self.status.roms_to_show[self.roms_selected_position]
+                if selected_rom not in self.status.multi_selected_roms:
+                    self.status.multi_selected_roms.append(selected_rom)
                 else:
-                    self.status.multi_selected_roms.remove(
-                        self.status.roms_to_show[self.roms_selected_position]
-                    )
-            self.input.reset_input()
+                    self.status.multi_selected_roms.remove(selected_rom)
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            if self.status.show_contextual_menu:
+            if self.status.show_contextual_menu and len(self.status.roms_to_show) > 0:
                 selected_rom = self.status.roms_to_show[self.roms_selected_position]
                 self.contextual_menu_options = [
                     (
                         f"{glyphs.about} Rom info",
                         0,
-                        lambda: ui.draw_log(
+                        lambda: self.ui.draw_log(
                             text_line_1=f"Rom name: {selected_rom.name}"
                         ),
                     ),
                 ]
                 is_in_device = os.path.exists(
                     os.path.join(
-                        self.fs.get_sd_storage_platform_path(
-                            selected_rom.platform_slug
-                        ),
+                        self.fs.get_platforms_storage_path(selected_rom.platform_slug),
                         selected_rom.fs_name,
                     )
                 )
@@ -420,19 +439,16 @@ class RomM:
                             1,
                             lambda: os.remove(
                                 os.path.join(
-                                    self.fs.get_sd_storage_platform_path(
-                                        self.status.roms_to_show[
-                                            self.roms_selected_position
-                                        ].platform_slug
+                                    self.fs.get_platforms_storage_path(
+                                        selected_rom.platform_slug
                                     ),
-                                    self.status.roms_to_show[
-                                        self.roms_selected_position
-                                    ].fs_name,
+                                    selected_rom.fs_name,
                                 )
                             ),
                         ),
                     )
-            self.input.reset_input()
+            else:
+                self.contextual_menu_options = []
         else:
             self.roms_selected_position = self.input.handle_navigation(
                 self.roms_selected_position,
@@ -441,32 +457,22 @@ class RomM:
             )
 
     def _render_contextual_menu(self):
-        pos = [ui.screen_width / 3, ui.screen_height / 3]
+        pos = [self.ui.screen_width / 3, self.ui.screen_height / 3]
         padding = 5
         width = 200
         n_options = len(self.contextual_menu_options)
         option_height = 32
         gap = 3
-        if self.status.current_view == View.PLATFORMS:
-            ui.draw_menu_background(
-                pos,
-                width,
-                n_options,
-                option_height,
-                gap,
-                padding,
-            )
-        elif self.status.current_view == View.COLLECTIONS:
-            ui.draw_menu_background(pos, width, n_options, option_height, gap, padding)
-        elif self.status.current_view == View.ROMS:
-            ui.draw_menu_background(pos, width, n_options, option_height, gap, padding)
-        else:
-            ui.draw_menu_background(pos, width, n_options, option_height, gap, padding)
-        start_idx = int(self.contextual_menu_selected_position / n_options) * n_options
-        end_idx = start_idx + n_options
-        for i, option in enumerate(self.contextual_menu_options[start_idx:end_idx]):
+
+        self.ui.draw_menu_background(pos, width, n_options, option_height, gap, padding)
+
+        n_options = len(self.contextual_menu_options)
+        if n_options == 0:  # Avoid division by zero when menu is empty
+            return
+
+        for i, option in enumerate(self.contextual_menu_options):
             is_selected = i == (self.contextual_menu_selected_position % n_options)
-            ui.row_list(
+            self.ui.row_list(
                 option[0],
                 (pos[0] + padding, pos[1] + padding + (i * (option_height + gap))),
                 width,
@@ -476,13 +482,14 @@ class RomM:
 
     def _update_contextual_menu(self):
         if self.input.key("A"):
-            self.contextual_menu_options[self.contextual_menu_selected_position][2]()
-            self.status.show_contextual_menu = False
-            self.input.reset_input()
+            if len(self.contextual_menu_options) > 0:
+                self.contextual_menu_options[self.contextual_menu_selected_position][
+                    2
+                ]()
+                self.status.show_contextual_menu = False
         elif self.input.key("B"):
-            self.status.show_contextual_menu = not self.status.show_contextual_menu
+            self.status.show_contextual_menu = False
             self.contextual_menu_options = []
-            self.input.reset_input()
         else:
             self.contextual_menu_selected_position = self.input.handle_navigation(
                 self.contextual_menu_selected_position,
@@ -491,47 +498,51 @@ class RomM:
             )
 
     def _render_start_menu(self):
-        pos = [ui.screen_width / 3, ui.screen_height / 3]
+        pos = [self.ui.screen_width / 3, self.ui.screen_height / 3]
         padding = 5
         width = 200
-        n_options = len(self.start_menu_options)
+        n_selectable_options = 3 if self.fs._sd2_roms_storage_path else 2
         option_height = 32
         gap = 3
         title = "Main menu"
-        title_x_adjustement = 35
-        version_x_adjustement = 50 / 6 * (len(version) + 2)
+        title_x_adjustment = 35
+        version_x_adjustment = 50 / 6 * (len(version) + 2)
         version_height = 20
-        ui.draw_menu_background(
+        self.ui.draw_menu_background(
             pos,
             width,
-            n_options,
+            len(self.start_menu_options),
             option_height,
             gap,
             padding,
             extra_top_offset=version_height,
             extra_bottom_offset=version_height,
         )
-        start_idx = int(self.start_menu_selected_position / n_options) * n_options
-        end_idx = start_idx + n_options
-        for i, option in enumerate(self.start_menu_options[start_idx:end_idx]):
-            is_selected = i == (self.start_menu_selected_position % n_options)
-            ui.row_list(
-                option[0],
-                (pos[0] + padding, pos[1] + padding + (i * (option_height + gap))),
-                width,
-                option_height,
-                is_selected,
+
+        selected_position = self.start_menu_selected_position % n_selectable_options
+        for i, option in enumerate(self.start_menu_options):
+            self.ui.row_list(
+                text=option[0],
+                position=(
+                    pos[0] + padding,
+                    pos[1] + padding + (i * (option_height + gap)),
+                ),
+                width=width,
+                height=option_height,
+                selected=selected_position == option[1],
+                color=color_white if option[1] > -1 else color_gray_2,
             )
-        ui.draw_text(
+
+        self.ui.draw_text(
             (
-                pos[0] + width - version_x_adjustement,
+                pos[0] + width - version_x_adjustment,
                 pos[1] + padding + len(self.start_menu_options) * (option_height + gap),
             ),
             f"v{version}",
         )
-        ui.draw_text(
+        self.ui.draw_text(
             (
-                pos[0] + width / 2 - title_x_adjustement,
+                pos[0] + width / 2 - title_x_adjustment,
                 pos[1] - option_height + version_height - padding,
             ),
             title,
@@ -539,70 +550,64 @@ class RomM:
 
     def _update_start_menu(self):
         if self.input.key("A"):
-            if self.start_menu_selected_position == StartMenuOptions.ABORT_DOWNLOAD[1]:
+            if self.start_menu_selected_position == self.start_menu_options[0][1]:
                 self.status.abort_download.set()
-                self.input.reset_input()
                 self.status.show_start_menu = False
-            elif self.start_menu_selected_position == StartMenuOptions.SD_SWITCH[1]:
-                current = self.fs.get_sd_storage()
+            elif self.start_menu_selected_position == self.start_menu_options[1][1]:
                 self.fs.switch_sd_storage()
-                new = self.fs.get_sd_storage()
-                if new == current:
-                    ui.draw_log(
-                        text_line_1=f"Error: Couldn't find path {self.fs.get_sd2_storage_path()}",
-                        text_color=ui.colorRed,
-                    )
-                else:
-                    ui.draw_log(
-                        text_line_1=f"Set download path to SD {self.fs.get_sd_storage()}: {self.fs.get_sd_storage_path()}",
-                        text_color=ui.colorGreen,
-                    )
-                self.input.reset_input()
-            elif self.start_menu_selected_position == StartMenuOptions.EXIT[1]:
-                ui.draw_end()
-                sys.exit()
+                self.status.show_start_menu = False
+            elif self.start_menu_selected_position == self.start_menu_options[2][1]:
+                self.running = False
+                self.status.show_start_menu = False
         elif self.input.key("B"):
             self.status.show_start_menu = not self.status.show_start_menu
-            self.input.reset_input()
         else:
+            n_selectable_options = 3 if self.fs._sd2_roms_storage_path else 2
             self.start_menu_selected_position = self.input.handle_navigation(
                 self.start_menu_selected_position,
-                len(self.start_menu_options),
-                len(self.start_menu_options),
+                n_selectable_options,
+                n_selectable_options,
             )
 
     def _update_common(self):
-        if self.input.key("MENUF") and not self.status.show_contextual_menu:
+        if (
+            self.input.key("MENUF") or self.input.key("SELECT")
+        ) and not self.status.show_contextual_menu:
             self.status.show_start_menu = not self.status.show_start_menu
-            self.input.reset_input()
         if self.input.key("START") and not self.status.show_start_menu:
             self.status.show_contextual_menu = not self.status.show_contextual_menu
-            self.input.reset_input()
+
+    def _monitor_input(self):
+        while self.running:
+            events = sdl2.ext.get_events()
+            for event in events:
+                self.input.check_event(event)
+                if event.type == sdl2.SDL_QUIT:
+                    self.running = False
 
     def start(self):
-        threading.Thread(target=self.input.check, daemon=True).start()
+        threading.Thread(target=self._monitor_input, daemon=True).start()
         self._render_platforms_view()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
         threading.Thread(target=self.api.fetch_me).start()
 
     def update(self):
-        ui.draw_clear()
+        self.ui.draw_clear()
 
         if self.status.me_ready.is_set():
-            ui.draw_header(self.api.host, self.api.username)
+            self.ui.draw_header(self.api.host, self.api.username)
 
         if not self.status.valid_host:
             if self.input.key("Y"):
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
-                self.input.reset_input()
-            ui.button_circle((20, 460), "Y", "Refresh", color=ui.colorGreen)
-            ui.draw_text(
-                (ui.screen_width / 2, ui.screen_height / 2),
+            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
+            self.ui.draw_text(
+                (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 f"Error: Can't connect to host\n{self.api.host}",
-                color=ui.colorRed,
+                color=color_red,
                 anchor="mm",
             )
         elif not self.status.valid_credentials:
@@ -610,12 +615,11 @@ class RomM:
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
-                self.input.reset_input()
-            ui.button_circle((20, 460), "Y", "Refresh", color=ui.colorGreen)
-            ui.draw_text(
-                (ui.screen_width / 2, ui.screen_height / 2),
+            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
+            self.ui.draw_text(
+                (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 "Error: Permission denied",
-                color=ui.colorRed,
+                color=color_red,
                 anchor="mm",
             )
         else:
@@ -647,7 +651,6 @@ class RomM:
                     and not self.status.show_contextual_menu
                 ):
                     self._update_platforms_view()
-
         # Render start menu
         if self.status.show_start_menu:
             self._render_start_menu()
@@ -657,19 +660,3 @@ class RomM:
             self._update_contextual_menu()
 
         self._update_common()
-
-        ui.draw_update()
-
-
-def main():
-    romm = RomM()
-    romm.start()
-
-    while True:
-        romm.update()
-        # Add a small sleep to prevent 100% CPU usage
-        time.sleep(0.01)
-
-
-if __name__ == "__main__":
-    main()

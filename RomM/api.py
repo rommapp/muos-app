@@ -3,21 +3,17 @@ import json
 import math
 import os
 import re
-import shutil
 import zipfile
 from typing import Tuple
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-from dotenv import load_dotenv
-from filesystem import MUOS_SUPPORTED_PLATFORMS, Filesystem
+import platform_maps
+from filesystem import Filesystem
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
-
-# Load .env file from one folder above
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 
 class API:
@@ -152,8 +148,12 @@ class API:
 
     def _fetch_platform_icon(self, platform_slug) -> None:
         try:
+            mapped_slug, icon_filename = platform_maps._ES_FOLDER_MAP.get(
+                platform_slug.lower(), (platform_slug, platform_slug)
+            )
+            icon_url = f"{self.host}/{self._platform_icon_url}/{icon_filename}.ico"
             request = Request(
-                f"{self.host}/{self._platform_icon_url}/{platform_slug}.ico",
+                f"{self.host}/{self._platform_icon_url}/{icon_filename}.ico",
                 headers=self.headers,
             )
         except ValueError as e:
@@ -178,6 +178,7 @@ class API:
             elif e.code == 404:
                 self._status.valid_host = True
                 self._status.valid_credentials = True
+                print(f"Requested icon not found: {icon_url}")
                 return
             else:
                 raise
@@ -187,6 +188,7 @@ class API:
             self._status.valid_credentials = False
             return
 
+        self._file_system.resources_path = os.getcwd() + "/resources"
         if not os.path.exists(self._file_system.resources_path):
             os.makedirs(self._file_system.resources_path)
 
@@ -230,16 +232,39 @@ class API:
             self._status.valid_credentials = False
             return
         platforms = json.loads(response.read().decode("utf-8"))
-        if isinstance(platforms, dict):
-            platforms = platforms["items"]
         _platforms: list[Platform] = []
+
+        # Get the list of subfolders in the ROMs directory for non-muOS filtering
+        roms_subfolders = set()
+        if not self._file_system.is_muos:
+            roms_path = self._file_system.get_sd1_roms_storage_path()
+            if os.path.exists(roms_path):
+                roms_subfolders = {
+                    d.lower()
+                    for d in os.listdir(roms_path)
+                    if os.path.isdir(os.path.join(roms_path, d))
+                }
+
         for platform in platforms:
             if platform["rom_count"] > 0:
-                if (
-                    platform["slug"].lower() not in MUOS_SUPPORTED_PLATFORMS
-                    or platform["slug"] in self._exclude_platforms
-                ):
-                    continue
+                platform_slug = platform["slug"].lower()
+                if self._file_system.is_muos:
+                    if (
+                        platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS
+                        or platform_slug in self._exclude_platforms
+                    ):
+                        continue
+                else:
+                    # Map the slug to the folder name for non-muOS
+                    mapped_folder, icon_file = platform_maps._ES_FOLDER_MAP.get(
+                        platform_slug.lower(), (platform_slug, platform_slug)
+                    )
+                    if (
+                        mapped_folder.lower() not in roms_subfolders
+                        or platform_slug in self._exclude_platforms
+                    ):
+                        continue
+
                 _platforms.append(
                     Platform(
                         id=platform["id"],
@@ -248,12 +273,15 @@ class API:
                         slug=platform["slug"],
                     )
                 )
-                if not os.path.exists(
-                    f"{self._file_system.resources_path}/{platform['slug']}.ico"
-                ):
+
+                self._file_system.resources_path = os.getcwd() + "/resources"
+                icon_path = f"{self._file_system.resources_path}/{platform['slug']}.ico"
+                if not os.path.exists(icon_path):
                     self._fetch_platform_icon(platform["slug"])
+
         _platforms.sort(key=lambda platform: platform.display_name)
         self._status.platforms = _platforms
+        print(f"Fetched {len(_platforms)} platforms")
         self._status.valid_host = True
         self._status.valid_credentials = True
         self._status.platforms_ready.set()
@@ -355,12 +383,15 @@ class API:
         if self._status.selected_platform:
             view = View.PLATFORMS
             id = self._status.selected_platform.id
+            selected_platform_slug = self._status.selected_platform.slug.lower()
         elif self._status.selected_collection:
             view = View.COLLECTIONS
             id = self._status.selected_collection.id
+            selected_platform_slug = None
         elif self._status.selected_virtual_collection:
             view = View.VIRTUAL_COLLECTIONS
             id = self._status.selected_virtual_collection.id
+            selected_platform_slug = None
         else:
             return
 
@@ -397,24 +428,48 @@ class API:
         roms = json.loads(response.read().decode("utf-8"))
         if isinstance(roms, dict):
             roms = roms["items"]
-        _roms = [
-            Rom(
-                id=rom["id"],
-                name=rom["name"],
-                fs_name=rom["fs_name"],
-                platform_slug=rom["platform_slug"],
-                fs_extension=rom["fs_extension"],
-                fs_size=self._human_readable_size(rom["fs_size_bytes"]),
-                fs_size_bytes=rom["fs_size_bytes"],
-                multi=rom["multi"],
-                languages=rom["languages"],
-                regions=rom["regions"],
-                revision=rom["revision"],
-                tags=rom["tags"],
+
+        # Get the list of subfolders in the ROMs directory for non-muOS filtering
+        roms_subfolders = set()
+        if not self._file_system.is_muos:
+            roms_path = self._file_system.get_sd1_roms_storage_path()
+            if os.path.exists(roms_path):
+                roms_subfolders = {
+                    d.lower()
+                    for d in os.listdir(roms_path)
+                    if os.path.isdir(os.path.join(roms_path, d))
+                }
+
+        _roms = []
+        for rom in roms:
+            platform_slug = rom["platform_slug"].lower()
+            if self._file_system.is_muos:
+                if platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS:
+                    continue
+            else:
+                mapped_folder, icon_file = platform_maps._ES_FOLDER_MAP.get(
+                    platform_slug.lower(), (platform_slug, platform_slug)
+                )
+                if mapped_folder.lower() not in roms_subfolders:
+                    continue
+            if view == View.PLATFORMS and platform_slug != selected_platform_slug:
+                continue
+            _roms.append(
+                Rom(
+                    id=rom["id"],
+                    name=rom["name"],
+                    fs_name=rom["fs_name"],
+                    platform_slug=rom["platform_slug"],
+                    fs_extension=rom["fs_extension"],
+                    fs_size=self._human_readable_size(rom["fs_size_bytes"]),
+                    fs_size_bytes=rom["fs_size_bytes"],
+                    multi=rom["multi"],
+                    languages=rom["languages"],
+                    regions=rom["regions"],
+                    revision=rom["revision"],
+                    tags=rom["tags"],
+                )
             )
-            for rom in roms
-            if rom["platform_slug"] in MUOS_SUPPORTED_PLATFORMS
-        ]
         _roms.sort(key=lambda rom: rom.name)
         self._status.roms = _roms
         self._status.valid_host = True
@@ -435,115 +490,87 @@ class API:
         self._status.download_rom_ready.set()
         self._status.abort_download.set()
 
-    def _download_file(self, url: str, dest_path: str, rom: Rom) -> bool:
-        """Download a file with progress tracking and abort capability."""
-        print(f"Fetching: {url}")
-        request = Request(url, headers=self.headers)
-
-        if request.type not in ("http", "https"):
-            print("Invalid URL scheme")
-            self._reset_download_status()
-            return False
-
-        print(f"Downloading {rom.name} to {dest_path}")
-
-        self._status.total_downloaded_bytes = 0
-        self._status.downloaded_percent = 0
-        chunk_size = 8192
-
-        with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
-            dest_path, "wb"
-        ) as out_file:
-            while not self._status.abort_download.is_set():
-                chunk = response.read(chunk_size)
-                if not chunk:
-                    print("Download completed")
-                    break
-
-                out_file.write(chunk)
-
-                # Update status
-                self._status.valid_host = True
-                self._status.valid_credentials = True
-                self._status.total_downloaded_bytes += len(chunk)
-
-                # Calculate percentage (avoid division by zero)
-                total_size = max(rom.fs_size_bytes, 1)
-                self._status.downloaded_percent = (
-                    self._status.total_downloaded_bytes / total_size
-                ) * 100
-
-            if self._status.abort_download.is_set():
-                print("Download aborted")
-                self._reset_download_status(True, True)
-                if os.path.exists(dest_path):
-                    os.remove(dest_path)
-                return False
-
-        return True
-
-    def _extract_zip_file(self, zip_path: str) -> bool:
-        """Extract a ZIP file with progress tracking and abort capability."""
-        extract_dir = os.path.dirname(zip_path)
-        self._status.extracting_rom = True
-        print("Multi-file ROM detected. Extracting...")
-
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            total_size = sum(file.file_size for file in zip_ref.infolist())
-            extracted_size = 0
-            self._status.extracted_percent = 0
-
-            for file in zip_ref.infolist():
-                if self._status.abort_download.is_set():
-                    print("Extraction aborted")
-                    self._reset_download_status(True, True)
-                    return False
-
-                # Sanitize the full path including all nested directories
-                sanitized_filename = self._sanitize_filename(file.filename)
-                file_path = os.path.join(extract_dir, sanitized_filename)
-
-                # Handle directory entries
-                if file.filename.endswith("/") or file.filename.endswith("\\"):
-                    os.makedirs(file_path, exist_ok=True)
-                    continue
-
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                with zip_ref.open(file) as source, open(file_path, "wb") as target:
-                    shutil.copyfileobj(source, target)
-
-                extracted_size += file.file_size
-                self._status.extracted_percent = (
-                    extracted_size / max(total_size, 1)
-                ) * 100
-
-        self._status.extracting_rom = False
-        return True
-
     def download_rom(self) -> None:
         self._status.download_queue.sort(key=lambda rom: rom.name)
         for i, rom in enumerate(self._status.download_queue):
+            self._status.downloading_rom = rom
+            self._status.downloading_rom_position = i + 1
+            dest_path = os.path.join(
+                self._file_system.get_sd1_platforms_storage_path(rom.platform_slug),
+                self._sanitize_filename(rom.fs_name),
+            )
+            url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
             try:
-                self._status.downloading_rom = rom
-                self._status.downloading_rom_position = i + 1
-
-                platform_dir = self._file_system.get_sd_storage_platform_path(
-                    rom.platform_slug
-                )
-                dest_filename = self._sanitize_filename(rom.fs_name)
-                dest_path = os.path.join(platform_dir, dest_filename)
-                url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
-
-                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-
-                if not self._download_file(url, dest_path, rom):
-                    return  # Download was aborted or failed
-
+                print(f"Fetching: {url}")
+                request = Request(url, headers=self.headers)
+            except ValueError:
+                self._reset_download_status()
+                return
+            try:
+                if request.type not in ("http", "https"):
+                    self._reset_download_status()
+                    return
+                print(f"Downloading {rom.name} to {dest_path}")
+                with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
+                    dest_path, "wb"
+                ) as out_file:
+                    self._status.total_downloaded_bytes = 0
+                    chunk_size = 1024
+                    while True:
+                        if not self._status.abort_download.is_set():
+                            chunk = response.read(chunk_size)
+                            if not chunk:
+                                print("Finalized download")
+                                break
+                            out_file.write(chunk)
+                            self._status.valid_host = True
+                            self._status.valid_credentials = True
+                            self._status.total_downloaded_bytes += len(chunk)
+                            self._status.downloaded_percent = (
+                                self._status.total_downloaded_bytes
+                                / (
+                                    self._status.downloading_rom.fs_size_bytes + 1
+                                )  # Add 1 virtual byte to avoid division by zero
+                            ) * 100
+                        else:
+                            self._reset_download_status(True, True)
+                            os.remove(dest_path)
+                            return
                 # Handle multi-file (ZIP) ROMs
                 if rom.multi:
-                    if not self._extract_zip_file(dest_path):
-                        return  # Extraction was aborted or failed
-
+                    self._status.extracting_rom = True
+                    print("Multi file rom detected. Extracting...")
+                    with zipfile.ZipFile(dest_path, "r") as zip_ref:
+                        total_size = sum(file.file_size for file in zip_ref.infolist())
+                        extracted_size = 0
+                        chunk_size = 1024
+                        for file in zip_ref.infolist():
+                            if not self._status.abort_download.is_set():
+                                file_path = os.path.join(
+                                    os.path.dirname(dest_path),
+                                    self._sanitize_filename(file.filename),
+                                )
+                                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                                with zip_ref.open(file) as source, open(
+                                    file_path, "wb"
+                                ) as target:
+                                    while True:
+                                        chunk = source.read(chunk_size)
+                                        if not chunk:
+                                            break
+                                        target.write(chunk)
+                                        extracted_size += len(chunk)
+                                        self._status.extracted_percent = (
+                                            extracted_size / total_size
+                                        ) * 100
+                            else:
+                                self._reset_download_status(True, True)
+                                os.remove(dest_path)
+                                return
+                    self._status.extracting_rom = False
+                    self._status.downloading_rom = None
                     os.remove(dest_path)
                     print(f"Extracted {rom.name} at {os.path.dirname(dest_path)}")
             except HTTPError as e:
@@ -555,6 +582,5 @@ class API:
             except URLError:
                 self._reset_download_status(valid_host=True)
                 return
-
         # End of download
         self._reset_download_status(valid_host=True, valid_credentials=True)

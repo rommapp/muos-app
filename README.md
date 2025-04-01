@@ -20,7 +20,7 @@
 
 # Overview
 
-This is a [muOS](https://muos.dev/) app to connects to your RomM instance and allows you to fetch games wirelessly from your Anbernic device.
+An app for CFWs that connects to your RomM instance and allows you to fetch games wirelessly from your handheld device.
 
 ## Screenshots
 
@@ -31,6 +31,8 @@ This is a [muOS](https://muos.dev/) app to connects to your RomM instance and al
 
 ## Installation
 
+### muOS
+
 We leverate the muOS [Archive Manager](https://muos.dev/help/archive) to install/update the app.
 
 1. Head to the [latest release](https://github.com/rommapp/muos-app/releases/latest) and download the `romm_muOS_install_x.x.x.zip` file.
@@ -38,6 +40,14 @@ We leverate the muOS [Archive Manager](https://muos.dev/help/archive) to install
 3. Launch the manager from `Applications > Archive Manager` and select `romm_muOS_install_x.x.x.zip`.
 4. Once installed, make a copy of `/mnt/mmc/MUOS/application/RomM/env.template`, rename it to `/mnt/mmc/MUOS/application/RomM/.env`, edit it (any method is fine, we recommend SSH) and set `HOST`, `USERNAME` and `PASSWORD`.
 5. Launch the app from `Applications > RomM` and start browsing your collection.
+
+### EmulationStation
+
+We use PortMaster to install the app on devices running EmulationStation.
+
+1. Download the `RomM App.sh` file and `RomM/` folder to the `roms/ports` on your device.
+2. Make the `RomM App.sh` file executable by running `chmod +x RomM App.sh`.
+3. Launch EmulationStation and navigate to the `Ports` section.
 
 ## Support
 
@@ -49,6 +59,44 @@ If you have any issues with the app, please [open an issue](https://github.com/r
 Join us on Discord, where you can ask questions, submit ideas, get help, showcase your collection, and discuss RomM with other users. You can also find our team is the [muOS Discord](https://discord.com/invite/muos).
 
 [![discord-invite]][discord-invite-url]
+
+## Contributing
+
+We use `uv` to manage python dependencies, install it with:
+
+```sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+And activate it:
+
+```sh
+uv venv
+source .venv/bin/activate
+```
+
+Then install python and the required dependencies:
+
+```sh
+uv python install
+uv sync --all-extras --dev
+```
+
+To build the app, you'll need to [install `just`](https://github.com/casey/just?tab=readme-ov-file#packages), then run:
+
+```sh
+just build
+```
+
+Just can also push the app to your device, but you need to set up an `.env` file with your device's IP and SSH credentials. Create a file called `.env` in the root of the project and add the following:
+
+```env
+DEVICE_IP_ADDRESS=
+PRIVATE_KEY_PATH=
+SSH_PASSWORD=
+```
+
+Then run `just`, which will clean, build and push the app to your device.
 
 <!-- Badges -->
 
