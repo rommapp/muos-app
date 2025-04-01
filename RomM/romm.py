@@ -578,18 +578,16 @@ class RomM:
         while self.running:
             events = sdl2.ext.get_events()
             for event in events:
-                self.input.check(event)
+                self.input.check_event(event)
                 if event.type == sdl2.SDL_QUIT:
                     self.running = False
 
-            sdl2.SDL_Delay(1)  # Delay to prevent high CPU usage
-
     def start(self):
+        threading.Thread(target=self._monitor_input, daemon=True).start()
         self._render_platforms_view()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
         threading.Thread(target=self.api.fetch_me).start()
-        threading.Thread(target=self._monitor_input).start()
 
     def update(self):
         self.ui.draw_clear()

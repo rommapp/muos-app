@@ -126,7 +126,7 @@ class Input:
             self._keys_held.discard(key_name)
             self._keys_held_start_time.pop(key_name, None)
 
-    def check(self, event=None) -> bool:
+    def check_event(self, event=None) -> bool:
         """
         Check for input events and update key states
         Returns if an event was processed
