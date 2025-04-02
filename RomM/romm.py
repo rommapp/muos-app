@@ -13,14 +13,14 @@ from input import Input
 from status import Filter, Status, View
 from ui import (
     UserInterface,
-    color_btn_x,
-    color_btn_shoulder,
-    color_menu_bg,
-    color_btn_y,
     color_btn_a,
+    color_btn_b,
+    color_btn_shoulder,
+    color_btn_x,
+    color_btn_y,
+    color_menu_bg,
     color_sel,
     color_text,
-    color_btn_b,
 )
 
 
@@ -51,7 +51,7 @@ class RomM:
         self.max_n_platforms = 10
         self.max_n_collections = 10
         self.max_n_roms = 10
-        self.buttons_config = []
+        self.buttons_config: list[dict[str, str]] = []
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
@@ -65,22 +65,21 @@ class RomM:
 
     def draw_buttons(self):
         # Button rendering with adjusted spacing
-        pos_x = 20          # Starting x position
-        radius = 20         # Diameter of button circle
-        char_width = 6      # Pixels per character (font=12, adjust as needed)
-        padding = 10        # Fixed spacing between buttons
+        pos_x = 20  # Starting x position
+        radius = 20  # Diameter of button circle
+        char_width = 6  # Pixels per character (font=12, adjust as needed)
+        padding = 10  # Fixed spacing between buttons
 
         for config in self.buttons_config:
             self.ui.button_circle(
-                (pos_x, 460),
-                config["key"],
-                config["label"],
-                color=config["color"]
+                (pos_x, 460), config["key"], config["label"], color=config["color"]
             )
             # Calculate width: circle + margin to text + text length
             label_length = len(config["label"])
             text_width = label_length * char_width
-            total_width = radius + 20 + text_width  # 20 is label_margin_l from button_circle
+            total_width = (
+                radius + 20 + text_width
+            )  # 20 is label_margin_l from button_circle
             pos_x += total_width + padding
 
     def _render_platforms_view(self):
@@ -352,22 +351,34 @@ class RomM:
                 {"key": "A", "label": "Download", "color": color_btn_a},
                 {"key": "B", "label": "Back", "color": color_btn_b},
                 {"key": "Y", "label": "Refresh", "color": color_btn_y},
-                {"key": "X", "label": f"Filter:{self.status.current_filter}", "color": color_btn_x},
+                {
+                    "key": "X",
+                    "label": f"Filter:{self.status.current_filter}",
+                    "color": color_btn_x,
+                },
                 {
                     "key": "L1",
-                    "label": "Deselect rom" 
-                    if (len(self.status.roms_to_show) > 0 and 
-                    self.status.roms_to_show[self.roms_selected_position] in self.status.multi_selected_roms)
-                    else "Select rom",
-                    "color": color_btn_shoulder
+                    "label": (
+                        "Deselect rom"
+                        if (
+                            len(self.status.roms_to_show) > 0
+                            and self.status.roms_to_show[self.roms_selected_position]
+                            in self.status.multi_selected_roms
+                        )
+                        else "Select rom"
+                    ),
+                    "color": color_btn_shoulder,
                 },
                 {
                     "key": "R1",
-                    "label": "Deselect all" 
-                    if len(self.status.multi_selected_roms) == len(self.status.roms_to_show) 
-                    else "Select all",
-                    "color": color_btn_shoulder
-                }
+                    "label": (
+                        "Deselect all"
+                        if len(self.status.multi_selected_roms)
+                        == len(self.status.roms_to_show)
+                        else "Select all"
+                    ),
+                    "color": color_btn_shoulder,
+                },
             ]
             self.draw_buttons()
 
