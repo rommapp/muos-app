@@ -26,6 +26,9 @@ class API:
     _user_profile_picture_url = "assets/romm/assets"
 
     def __init__(self):
+        self.status = Status()
+        self.file_system = Filesystem()
+
         self.host = os.getenv("HOST", "")
         self.username = os.getenv("USERNAME", "")
         self.password = os.getenv("PASSWORD", "")
@@ -34,8 +37,6 @@ class API:
         self._include_collections = set(self._getenv_list("INCLUDE_COLLECTIONS"))
         self._exclude_collections = set(self._getenv_list("EXCLUDE_COLLECTIONS"))
         self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
-        self._status = Status()
-        self._file_system = Filesystem()
 
         if self.username and self.password:
             credentials = f"{self.username}:{self.password}"
@@ -76,40 +77,40 @@ class API:
             )
         except ValueError as e:
             print(e)
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         try:
             if request.type not in ("http", "https"):
-                self._status.valid_host = False
-                self._status.valid_credentials = False
+                self.status.valid_host = False
+                self.status.valid_credentials = False
                 return
             response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
         except HTTPError as e:
             print(e)
             if e.code == 403:
-                self._status.valid_host = True
-                self._status.valid_credentials = False
+                self.status.valid_host = True
+                self.status.valid_credentials = False
                 return
             else:
                 raise
         except URLError as e:
             print(e)
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
-        if not os.path.exists(self._file_system.resources_path):
-            os.makedirs(self._file_system.resources_path)
-        self._status.profile_pic_path = (
-            f"{self._file_system.resources_path}/{self.username}.{fs_extension}"
+        if not os.path.exists(self.file_system.resources_path):
+            os.makedirs(self.file_system.resources_path)
+        self.status.profile_pic_path = (
+            f"{self.file_system.resources_path}/{self.username}.{fs_extension}"
         )
-        with open(self._status.profile_pic_path, "wb") as f:
+        with open(self.status.profile_pic_path, "wb") as f:
             f.write(response.read())
-        icon = Image.open(self._status.profile_pic_path)
+        icon = Image.open(self.status.profile_pic_path)
         icon = icon.resize((26, 26))
-        icon.save(self._status.profile_pic_path)
-        self._status.valid_host = True
-        self._status.valid_credentials = True
+        icon.save(self.status.profile_pic_path)
+        self.status.valid_host = True
+        self.status.valid_credentials = True
 
     def fetch_me(self) -> None:
         try:
@@ -118,33 +119,33 @@ class API:
             )
         except ValueError as e:
             print(e)
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         try:
             if request.type not in ("http", "https"):
-                self._status.valid_host = False
-                self._status.valid_credentials = False
+                self.status.valid_host = False
+                self.status.valid_credentials = False
                 return
             response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
         except HTTPError as e:
             print(e)
             if e.code == 403:
-                self._status.valid_host = True
-                self._status.valid_credentials = False
+                self.status.valid_host = True
+                self.status.valid_credentials = False
                 return
             else:
                 raise
         except URLError as e:
             print(e)
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         me = json.loads(response.read().decode("utf-8"))
-        self._status.me = me
+        self.status.me = me
         if me["avatar_path"]:
             self._fetch_user_profile_picture(me["avatar_path"])
-        self._status.me_ready.set()
+        self.status.me_ready.set()
 
     def _fetch_platform_icon(self, platform_slug) -> None:
         try:
@@ -158,48 +159,48 @@ class API:
             )
         except ValueError as e:
             print(e)
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
 
         try:
             if request.type not in ("http", "https"):
-                self._status.valid_host = False
-                self._status.valid_credentials = False
+                self.status.valid_host = False
+                self.status.valid_credentials = False
                 return
             response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
         except HTTPError as e:
             print(e)
             if e.code == 403:
-                self._status.valid_host = True
-                self._status.valid_credentials = False
+                self.status.valid_host = True
+                self.status.valid_credentials = False
                 return
             # Icon is missing on the server
             elif e.code == 404:
-                self._status.valid_host = True
-                self._status.valid_credentials = True
+                self.status.valid_host = True
+                self.status.valid_credentials = True
                 print(f"Requested icon not found: {icon_url}")
                 return
             else:
                 raise
         except URLError as e:
             print(e)
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
 
-        self._file_system.resources_path = os.getcwd() + "/resources"
-        if not os.path.exists(self._file_system.resources_path):
-            os.makedirs(self._file_system.resources_path)
+        self.file_system.resources_path = os.getcwd() + "/resources"
+        if not os.path.exists(self.file_system.resources_path):
+            os.makedirs(self.file_system.resources_path)
 
-        with open(f"{self._file_system.resources_path}/{platform_slug}.ico", "wb") as f:
+        with open(f"{self.file_system.resources_path}/{platform_slug}.ico", "wb") as f:
             f.write(response.read())
 
-        icon = Image.open(f"{self._file_system.resources_path}/{platform_slug}.ico")
+        icon = Image.open(f"{self.file_system.resources_path}/{platform_slug}.ico")
         icon = icon.resize((30, 30))
-        icon.save(f"{self._file_system.resources_path}/{platform_slug}.ico")
-        self._status.valid_host = True
-        self._status.valid_credentials = True
+        icon.save(f"{self.file_system.resources_path}/{platform_slug}.ico")
+        self.status.valid_host = True
+        self.status.valid_credentials = True
 
     def fetch_platforms(self) -> None:
         try:
@@ -207,39 +208,39 @@ class API:
                 f"{self.host}/{self._platforms_endpoint}", headers=self.headers
             )
         except ValueError:
-            self._status.platforms = []
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.platforms = []
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         try:
             if request.type not in ("http", "https"):
-                self._status.platforms = []
-                self._status.valid_host = False
-                self._status.valid_credentials = False
+                self.status.platforms = []
+                self.status.valid_host = False
+                self.status.valid_credentials = False
                 return
             response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
         except HTTPError as e:
             print(f"HTTP Error in fetching platforms: {e}")
             if e.code == 403:
-                self._status.platforms = []
-                self._status.valid_host = True
-                self._status.valid_credentials = False
+                self.status.platforms = []
+                self.status.valid_host = True
+                self.status.valid_credentials = False
                 return
             else:
                 raise
         except URLError:
             print("URLError in fetching platforms")
-            self._status.platforms = []
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.platforms = []
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         platforms = json.loads(response.read().decode("utf-8"))
         _platforms: list[Platform] = []
 
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
-        if not self._file_system.is_muos:
-            roms_path = self._file_system.get_roms_storage_path()
+        if not self.file_system.is_muos:
+            roms_path = self.file_system.get_roms_storage_path()
             print(f"ROMs path: {roms_path}")
             if os.path.exists(roms_path):
                 roms_subfolders = {
@@ -251,7 +252,7 @@ class API:
         for platform in platforms:
             if platform["rom_count"] > 0:
                 platform_slug = platform["slug"].lower()
-                if self._file_system.is_muos:
+                if self.file_system.is_muos:
                     if (
                         platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS
                         or platform_slug in self._exclude_platforms
@@ -277,20 +278,17 @@ class API:
                     )
                 )
 
-                self._file_system.resources_path = os.getcwd() + "/resources"
-                icon_path = f"{self._file_system.resources_path}/{platform['slug']}.ico"
+                self.file_system.resources_path = os.getcwd() + "/resources"
+                icon_path = f"{self.file_system.resources_path}/{platform['slug']}.ico"
                 if not os.path.exists(icon_path):
-                    try:
-                        self._fetch_platform_icon(platform["slug"])
-                    except Exception as e:
-                        print(f"Failed to fetch icon for {platform['slug']}: {e}")
+                    self._fetch_platform_icon(platform["slug"])
 
         _platforms.sort(key=lambda platform: platform.display_name)
-        self._status.platforms = _platforms
+        self.status.platforms = _platforms
         print(f"Fetched {len(_platforms)} platforms")
-        self._status.valid_host = True
-        self._status.valid_credentials = True
-        self._status.platforms_ready.set()
+        self.status.valid_host = True
+        self.status.valid_credentials = True
+        self.status.platforms_ready.set()
 
     def fetch_collections(self) -> None:
         try:
@@ -302,16 +300,16 @@ class API:
                 headers=self.headers,
             )
         except ValueError:
-            self._status.collections = []
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.collections = []
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
 
         try:
             if collections_request.type not in ("http", "https"):
-                self._status.collections = []
-                self._status.valid_host = False
-                self._status.valid_credentials = False
+                self.status.collections = []
+                self.status.valid_host = False
+                self.status.valid_credentials = False
                 return
 
             collections_response = urlopen(  # trunk-ignore(bandit/B310)
@@ -322,16 +320,16 @@ class API:
             )
         except HTTPError as e:
             if e.code == 403:
-                self._status.collections = []
-                self._status.valid_host = True
-                self._status.valid_credentials = False
+                self.status.collections = []
+                self.status.valid_host = True
+                self.status.valid_credentials = False
                 return
             else:
                 raise
         except URLError:
-            self._status.collections = []
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.collections = []
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
 
         collections = json.loads(collections_response.read().decode("utf-8"))
@@ -380,23 +378,23 @@ class API:
 
         _collections.sort(key=lambda collection: collection.name)
 
-        self._status.collections = _collections
-        self._status.valid_host = True
-        self._status.valid_credentials = True
-        self._status.collections_ready.set()
+        self.status.collections = _collections
+        self.status.valid_host = True
+        self.status.valid_credentials = True
+        self.status.collections_ready.set()
 
     def fetch_roms(self) -> None:
-        if self._status.selected_platform:
+        if self.status.selected_platform:
             view = View.PLATFORMS
-            id = self._status.selected_platform.id
-            selected_platform_slug = self._status.selected_platform.slug.lower()
-        elif self._status.selected_collection:
+            id = self.status.selected_platform.id
+            selected_platform_slug = self.status.selected_platform.slug.lower()
+        elif self.status.selected_collection:
             view = View.COLLECTIONS
-            id = self._status.selected_collection.id
+            id = self.status.selected_collection.id
             selected_platform_slug = None
-        elif self._status.selected_virtual_collection:
+        elif self.status.selected_virtual_collection:
             view = View.VIRTUAL_COLLECTIONS
-            id = self._status.selected_virtual_collection.id
+            id = self.status.selected_virtual_collection.id
             selected_platform_slug = None
         else:
             return
@@ -407,29 +405,29 @@ class API:
                 headers=self.headers,
             )
         except ValueError:
-            self._status.roms = []
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.roms = []
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         try:
             if request.type not in ("http", "https"):
-                self._status.roms = []
-                self._status.valid_host = False
-                self._status.valid_credentials = False
+                self.status.roms = []
+                self.status.valid_host = False
+                self.status.valid_credentials = False
                 return
             response = urlopen(request, timeout=1800)  # trunk-ignore(bandit/B310)
         except HTTPError as e:
             if e.code == 403:
-                self._status.roms = []
-                self._status.valid_host = True
-                self._status.valid_credentials = False
+                self.status.roms = []
+                self.status.valid_host = True
+                self.status.valid_credentials = False
                 return
             else:
                 raise
         except URLError:
-            self._status.roms = []
-            self._status.valid_host = False
-            self._status.valid_credentials = False
+            self.status.roms = []
+            self.status.valid_host = False
+            self.status.valid_credentials = False
             return
         roms = json.loads(response.read().decode("utf-8"))
         if isinstance(roms, dict):
@@ -437,8 +435,8 @@ class API:
 
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
-        if not self._file_system.is_muos:
-            roms_path = self._file_system.get_roms_storage_path()
+        if not self.file_system.is_muos:
+            roms_path = self.file_system.get_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
                     d.lower()
@@ -449,7 +447,7 @@ class API:
         _roms = []
         for rom in roms:
             platform_slug = rom["platform_slug"].lower()
-            if self._file_system.is_muos:
+            if self.file_system.is_muos:
                 if platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS:
                     continue
             else:
@@ -477,32 +475,32 @@ class API:
                 )
             )
         _roms.sort(key=lambda rom: rom.name)
-        self._status.roms = _roms
-        self._status.valid_host = True
-        self._status.valid_credentials = True
-        self._status.roms_ready.set()
+        self.status.roms = _roms
+        self.status.valid_host = True
+        self.status.valid_credentials = True
+        self.status.roms_ready.set()
 
     def _reset_download_status(
         self, valid_host: bool = False, valid_credentials: bool = False
     ) -> None:
-        self._status.total_downloaded_bytes = 0
-        self._status.downloaded_percent = 0
-        self._status.valid_host = valid_host
-        self._status.valid_credentials = valid_credentials
-        self._status.downloading_rom = None
-        self._status.extracting_rom = False
-        self._status.multi_selected_roms = []
-        self._status.download_queue = []
-        self._status.download_rom_ready.set()
-        self._status.abort_download.set()
+        self.status.total_downloaded_bytes = 0
+        self.status.downloaded_percent = 0
+        self.status.valid_host = valid_host
+        self.status.valid_credentials = valid_credentials
+        self.status.downloading_rom = None
+        self.status.extracting_rom = False
+        self.status.multi_selected_roms = []
+        self.status.download_queue = []
+        self.status.download_rom_ready.set()
+        self.status.abort_download.set()
 
     def download_rom(self) -> None:
-        self._status.download_queue.sort(key=lambda rom: rom.name)
-        for i, rom in enumerate(self._status.download_queue):
-            self._status.downloading_rom = rom
-            self._status.downloading_rom_position = i + 1
+        self.status.download_queue.sort(key=lambda rom: rom.name)
+        for i, rom in enumerate(self.status.download_queue):
+            self.status.downloading_rom = rom
+            self.status.downloading_rom_position = i + 1
             dest_path = os.path.join(
-                self._file_system.get_platforms_storage_path(rom.platform_slug),
+                self.file_system.get_platforms_storage_path(rom.platform_slug),
                 self._sanitize_filename(rom.fs_name),
             )
             url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
@@ -522,22 +520,22 @@ class API:
                 with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
                     dest_path, "wb"
                 ) as out_file:
-                    self._status.total_downloaded_bytes = 0
+                    self.status.total_downloaded_bytes = 0
                     chunk_size = 1024
                     while True:
-                        if not self._status.abort_download.is_set():
+                        if not self.status.abort_download.is_set():
                             chunk = response.read(chunk_size)
                             if not chunk:
                                 print("Finalized download")
                                 break
                             out_file.write(chunk)
-                            self._status.valid_host = True
-                            self._status.valid_credentials = True
-                            self._status.total_downloaded_bytes += len(chunk)
-                            self._status.downloaded_percent = (
-                                self._status.total_downloaded_bytes
+                            self.status.valid_host = True
+                            self.status.valid_credentials = True
+                            self.status.total_downloaded_bytes += len(chunk)
+                            self.status.downloaded_percent = (
+                                self.status.total_downloaded_bytes
                                 / (
-                                    self._status.downloading_rom.fs_size_bytes + 1
+                                    self.status.downloading_rom.fs_size_bytes + 1
                                 )  # Add 1 virtual byte to avoid division by zero
                             ) * 100
                         else:
@@ -546,14 +544,14 @@ class API:
                             return
                 # Handle multi-file (ZIP) ROMs
                 if rom.multi:
-                    self._status.extracting_rom = True
+                    self.status.extracting_rom = True
                     print("Multi file rom detected. Extracting...")
                     with zipfile.ZipFile(dest_path, "r") as zip_ref:
                         total_size = sum(file.file_size for file in zip_ref.infolist())
                         extracted_size = 0
                         chunk_size = 1024
                         for file in zip_ref.infolist():
-                            if not self._status.abort_download.is_set():
+                            if not self.status.abort_download.is_set():
                                 file_path = os.path.join(
                                     os.path.dirname(dest_path),
                                     self._sanitize_filename(file.filename),
@@ -568,15 +566,15 @@ class API:
                                             break
                                         target.write(chunk)
                                         extracted_size += len(chunk)
-                                        self._status.extracted_percent = (
+                                        self.status.extracted_percent = (
                                             extracted_size / total_size
                                         ) * 100
                             else:
                                 self._reset_download_status(True, True)
                                 os.remove(dest_path)
                                 return
-                    self._status.extracting_rom = False
-                    self._status.downloading_rom = None
+                    self.status.extracting_rom = False
+                    self.status.downloading_rom = None
                     os.remove(dest_path)
                     print(f"Extracted {rom.name} at {os.path.dirname(dest_path)}")
             except HTTPError as e:
