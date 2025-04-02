@@ -51,6 +51,7 @@ class RomM:
         self.max_n_platforms = 10
         self.max_n_collections = 10
         self.max_n_roms = 10
+        self.buttons_config = []
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
@@ -61,6 +62,26 @@ class RomM:
             (StartMenuOptions.SD_SWITCH, 1 if self.fs._sd2_roms_storage_path else -1),
             (StartMenuOptions.EXIT, 2 if self.fs._sd2_roms_storage_path else 1),
         ]
+
+    def draw_buttons(self):
+        # Button rendering with adjusted spacing
+        pos_x = 20          # Starting x position
+        radius = 20         # Diameter of button circle
+        char_width = 6      # Pixels per character (font=12, adjust as needed)
+        padding = 10        # Fixed spacing between buttons
+
+        for config in self.buttons_config:
+            self.ui.button_circle(
+                (pos_x, 460),
+                config["key"],
+                config["label"],
+                color=config["color"]
+            )
+            # Calculate width: circle + margin to text + text length
+            label_length = len(config["label"])
+            text_width = label_length * char_width
+            total_width = radius + 20 + text_width  # 20 is label_margin_l from button_circle
+            pos_x += total_width + padding
 
     def _render_platforms_view(self):
         if self.status.platforms_ready.is_set():
@@ -104,18 +125,12 @@ class RomM:
             )
             self.status.valid_credentials = True
         else:
-            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
-            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
-            self.ui.button_circle(
-                (233, 460),
-                "X",
-                (
-                    "Collections"
-                    if self.status.current_view == View.PLATFORMS
-                    else "Platforms"
-                ),
-                color=color_blue,
-            )
+            self.buttons_config = [
+                {"key": "A", "label": "Select", "color": color_red},
+                {"key": "Y", "label": "Refresh", "color": color_green},
+                {"key": "X", "label": "Collections", "color": color_blue},
+            ]
+            self.draw_buttons()
 
     def _update_platforms_view(self):
         if self.input.key("A"):
@@ -201,18 +216,12 @@ class RomM:
             )
             self.status.valid_credentials = True
         else:
-            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
-            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
-            self.ui.button_circle(
-                (233, 460),
-                "X",
-                (
-                    "Collections"
-                    if self.status.current_view == View.PLATFORMS
-                    else "Platforms"
-                ),
-                color=color_blue,
-            )
+            self.buttons_config = [
+                {"key": "A", "label": "Select", "color": color_red},
+                {"key": "Y", "label": "Refresh", "color": color_green},
+                {"key": "X", "label": "Platforms", "color": color_blue},
+            ]
+            self.draw_buttons()
 
     def _update_collections_view(self):
         if self.input.key("A"):
@@ -339,26 +348,28 @@ class RomM:
             )
             self.status.valid_credentials = True
         else:
-            self.ui.button_circle((20, 460), "A", "Download", color=color_red)
-            self.ui.button_circle((135, 460), "B", "Back", color=color_yellow)
-            self.ui.button_circle((215, 460), "Y", "Refresh", color=color_green)
-            self.ui.button_circle(
-                (320, 460),
-                "X",
-                f"Filter: {self.status.current_filter}",
-                color=color_blue,
-            )
-            self.ui.button_circle(
-                (435 + (len(str(self.status.current_filter)) * 9), 460),
-                "R1",
-                (
-                    "Deselect all"
-                    if len(self.status.multi_selected_roms)
-                    == len(self.status.roms_to_show)
-                    else "Select all"
-                ),
-                color=color_gray_1,
-            )
+            self.buttons_config = [
+                {"key": "A", "label": "Download", "color": color_red},
+                {"key": "B", "label": "Back", "color": color_yellow},
+                {"key": "Y", "label": "Refresh", "color": color_green},
+                {"key": "X", "label": f"Filter:{self.status.current_filter}", "color": color_blue},
+                {
+                    "key": "L1",
+                    "label": "Deselect rom" 
+                    if (len(self.status.roms_to_show) > 0 and 
+                    self.status.roms_to_show[self.roms_selected_position] in self.status.multi_selected_roms)
+                    else "Select rom",
+                    "color": color_gray_1
+                },
+                {
+                    "key": "R1",
+                    "label": "Deselect all" 
+                    if len(self.status.multi_selected_roms) == len(self.status.roms_to_show) 
+                    else "Select all",
+                    "color": color_gray_1
+                }
+            ]
+            self.draw_buttons()
 
     def _update_roms_view(self):
         if self.input.key("A"):
@@ -403,7 +414,7 @@ class RomM:
                 self.status.multi_selected_roms = []
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
-        elif self.input.key("SELECT"):
+        elif self.input.key("L1"):
             if (
                 self.status.download_rom_ready.is_set()
                 and len(self.status.roms_to_show) > 0
@@ -497,7 +508,7 @@ class RomM:
         padding = 5
         width = 200
         n_selectable_options = 3 if self.fs._sd2_roms_storage_path else 2
-        option_height = 32
+        option_height = 24
         gap = 3
         title = "Main menu"
         title_x_adjustment = 35

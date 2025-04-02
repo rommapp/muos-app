@@ -11,7 +11,7 @@ from models import Collection, Platform, Rom
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
 
-FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 15)}
+FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
 
 color_violet = "#ad3c6b"
 color_green = "#41aa3b"
@@ -268,7 +268,7 @@ class UserInterface:
         radius_bg = 5
         max_len_text = 65
         margin_left_text = 15
-        margin_text_bottom = 28
+        margin_text_bottom = 29
         margin_text_bottom_multiline_line_1 = 38
         margin_text_bottom_multiline_line_2 = 21
 
