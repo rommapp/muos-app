@@ -13,15 +13,15 @@ from status import Status
 
 FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
 
-color_violet = "#ad3c6b"
-color_green = "#41aa3b"
-color_dark_green = "#3d6b39"
-color_red = "#3c3cad"
-color_blue = "#bb7200"
-color_yellow = "#3b80aa"
-color_gray_1 = "#383838"
-color_gray_2 = "#141414"
-color_white = "#ffffff"
+color_btn_a = "#ad3c6b"
+color_btn_b = "#bb7200"
+color_btn_x = "#3b80aa"
+color_btn_y = "#41aa3b"
+color_btn_shoulder = "#383838"
+color_menu_bg = "#141414"
+color_sel = "#ad3c6b"
+color_progress_bar = "#3d6b39"
+color_text = "#ffffff"
 
 
 class UserInterface:
@@ -145,7 +145,7 @@ class UserInterface:
         position: tuple[float, float],
         text: str,
         font: int = 15,
-        color: str = color_white,
+        color: str = color_text,
         **kwargs,
     ):
         self.active_draw.text(
@@ -177,8 +177,8 @@ class UserInterface:
         width: int,
         height: int,
         selected: bool = False,
-        fill: str = color_violet,
-        color: str = color_white,
+        fill: str = color_sel,
+        color: str = color_text,
         outline: str | None = None,
         append_icon_path: str | None = None,
     ):
@@ -193,7 +193,7 @@ class UserInterface:
         self.draw_rectangle_r(
             [position[0], position[1], position[0] + width, position[1] + height],
             radius,
-            fill=fill if selected else color_gray_1,
+            fill=fill if selected else color_btn_shoulder,
             outline=outline,
         )
 
@@ -217,7 +217,7 @@ class UserInterface:
         position: ImageDraw.Coords,
         radius: int,
         fill: str | None = None,
-        outline: str | None = color_white,
+        outline: str | None = color_text,
     ):
         self.active_draw.ellipse(
             [
@@ -235,7 +235,7 @@ class UserInterface:
         position: ImageDraw.Coords,
         button: str,
         text: str,
-        color: str = color_violet,
+        color: str = color_sel,
     ):
         radius = 10
         btn_text_offset = 1
@@ -260,7 +260,7 @@ class UserInterface:
         text_line_2: str = "",
         fill: str = "black",
         outline: str = "black",
-        text_color: str = color_white,
+        text_color: str = color_text,
         background: bool = True,
     ):
         margin_bg = 5
@@ -316,7 +316,7 @@ class UserInterface:
                 color=text_color,
             )
 
-    def draw_loader(self, percent: int, color: str = color_dark_green):
+    def draw_loader(self, percent: int, color: str = color_progress_bar):
         margin = 10
         margin_top = 38
         margin_bottom = 4
@@ -379,10 +379,10 @@ class UserInterface:
         platforms_selected_position: int,
         max_n_platforms: int,
         platforms: list[Platform],
-        fill: str = color_violet,
+        fill: str = color_sel,
     ):
         self.draw_rectangle_r(
-            [10, 50, self.screen_width - 10, 100], 5, outline=color_gray_2
+            [10, 50, self.screen_width - 10, 100], 5, outline=color_menu_bg
         )
         self.draw_text(
             (self.screen_width / 2, 62),
@@ -392,7 +392,7 @@ class UserInterface:
         self.draw_rectangle_r(
             [10, 70, self.screen_width - 10, self.screen_height - 43],
             0,
-            fill=color_gray_2,
+            fill=color_menu_bg,
             outline=None,
         )
 
@@ -421,10 +421,10 @@ class UserInterface:
         collections_selected_position: int,
         max_n_collections: int,
         collections: list[Collection],
-        fill: str = color_violet,
+        fill: str = color_sel,
     ):
         self.draw_rectangle_r(
-            [10, 50, self.screen_width - 10, 100], 5, outline=color_gray_2
+            [10, 50, self.screen_width - 10, 100], 5, outline=color_menu_bg
         )
         self.draw_text(
             (self.screen_width / 2, 62),
@@ -434,7 +434,7 @@ class UserInterface:
         self.draw_rectangle_r(
             [10, 70, self.screen_width - 10, self.screen_height - 43],
             0,
-            fill=color_gray_2,
+            fill=color_menu_bg,
             outline=None,
         )
 
@@ -484,7 +484,7 @@ class UserInterface:
         prepend_platform_slug: bool = False,
     ):
         self.draw_rectangle_r(
-            [10, 50, self.screen_width - 10, 100], 5, outline=color_gray_2
+            [10, 50, self.screen_width - 10, 100], 5, outline=color_menu_bg
         )
         self.draw_text(
             (self.screen_width / 2, 62),
@@ -495,7 +495,7 @@ class UserInterface:
         self.draw_rectangle_r(
             [10, 70, self.screen_width - 10, self.screen_height - 43],
             0,
-            fill=color_gray_2,
+            fill=color_menu_bg,
             outline=None,
         )
 
@@ -574,6 +574,6 @@ class UserInterface:
                 + extra_bottom_offset,
             ],
             5,
-            fill=color_gray_2,
-            outline=color_violet,
+            fill=color_menu_bg,
+            outline=color_sel,
         )
