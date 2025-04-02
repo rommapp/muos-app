@@ -110,7 +110,7 @@ class Input:
                         )
                 else:
                     print(f"Warning: Controller config file {config_str} not found")
-
+        else:
             print("No controller mappings loaded - using SDL defaults")
 
     def _add_key_pressed(self, key_name: str) -> None:

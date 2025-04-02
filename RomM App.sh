@@ -26,14 +26,14 @@ mkdir -p "${LOG_DIR}"
 cd "${GAMEDIR}" || exit
 
 # trunk-ignore(shellcheck/SC2155)
-export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d_%H-%M-%S').log"
+export LOG_FILE="${LOG_DIR}/$(date +'%Y-%m-%d').log"
 export PYSDL2_DLL_PATH="/usr/lib"
 export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
 
 # Run the app
 pm_platform_helper "python" >dev/null
-python main.py
+python main.py >"${LOG_FILE}" 2>&1
 
 # Cleanup
 pm_finish

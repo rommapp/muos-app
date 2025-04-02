@@ -219,6 +219,7 @@ class API:
                 return
             response = urlopen(request, timeout=60)  # trunk-ignore(bandit/B310)
         except HTTPError as e:
+            print(f"HTTP Error in fetching platforms: {e}")
             if e.code == 403:
                 self._status.platforms = []
                 self._status.valid_host = True
@@ -227,6 +228,7 @@ class API:
             else:
                 raise
         except URLError:
+            print("URLError in fetching platforms")
             self._status.platforms = []
             self._status.valid_host = False
             self._status.valid_credentials = False
@@ -237,7 +239,8 @@ class API:
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
         if not self._file_system.is_muos:
-            roms_path = self._file_system.get_sd1_roms_storage_path()
+            roms_path = self._file_system.get_roms_storage_path()
+            print(f"ROMs path: {roms_path}")
             if os.path.exists(roms_path):
                 roms_subfolders = {
                     d.lower()
@@ -277,7 +280,10 @@ class API:
                 self._file_system.resources_path = os.getcwd() + "/resources"
                 icon_path = f"{self._file_system.resources_path}/{platform['slug']}.ico"
                 if not os.path.exists(icon_path):
-                    self._fetch_platform_icon(platform["slug"])
+                    try:
+                        self._fetch_platform_icon(platform["slug"])
+                    except Exception as e:
+                        print(f"Failed to fetch icon for {platform['slug']}: {e}")
 
         _platforms.sort(key=lambda platform: platform.display_name)
         self._status.platforms = _platforms
@@ -432,7 +438,7 @@ class API:
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
         if not self._file_system.is_muos:
-            roms_path = self._file_system.get_sd1_roms_storage_path()
+            roms_path = self._file_system.get_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
                     d.lower()
@@ -496,7 +502,7 @@ class API:
             self._status.downloading_rom = rom
             self._status.downloading_rom_position = i + 1
             dest_path = os.path.join(
-                self._file_system.get_sd1_platforms_storage_path(rom.platform_slug),
+                self._file_system.get_platforms_storage_path(rom.platform_slug),
                 self._sanitize_filename(rom.fs_name),
             )
             url = f"{self.host}/{self._roms_endpoint}/{rom.id}/content/{quote(rom.fs_name)}?hidden_folder=true"
