@@ -13,14 +13,14 @@ from input import Input
 from status import Filter, Status, View
 from ui import (
     UserInterface,
-    color_blue,
-    color_gray_1,
-    color_gray_2,
-    color_green,
-    color_red,
-    color_violet,
-    color_white,
-    color_yellow,
+    color_btn_a,
+    color_btn_b,
+    color_btn_shoulder,
+    color_btn_x,
+    color_btn_y,
+    color_menu_bg,
+    color_sel,
+    color_text,
 )
 
 
@@ -51,6 +51,7 @@ class RomM:
         self.max_n_platforms = 10
         self.max_n_collections = 10
         self.max_n_roms = 10
+        self.buttons_config: list[dict[str, str]] = []
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
@@ -61,6 +62,25 @@ class RomM:
             (StartMenuOptions.SD_SWITCH, 1 if self.fs._sd2_roms_storage_path else -1),
             (StartMenuOptions.EXIT, 2 if self.fs._sd2_roms_storage_path else 1),
         ]
+
+    def draw_buttons(self):
+        # Button rendering with adjusted spacing
+        pos_x = 20  # Starting x position
+        radius = 20  # Diameter of button circle
+        char_width = 6  # Pixels per character (font=12, adjust as needed)
+        padding = 10  # Fixed spacing between buttons
+
+        for config in self.buttons_config:
+            self.ui.button_circle(
+                (pos_x, 460), config["key"], config["label"], color=config["color"]
+            )
+            # Calculate width: circle + margin to text + text length
+            label_length = len(config["label"])
+            text_width = label_length * char_width
+            total_width = (
+                radius + 20 + text_width
+            )  # 20 is label_margin_l from button_circle
+            pos_x += total_width + padding
 
     def _render_platforms_view(self):
         if self.status.platforms_ready.is_set():
@@ -79,7 +99,7 @@ class RomM:
             )
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
+                self.ui.draw_loader(self.status.extracted_percent, color=color_btn_b)
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
@@ -95,27 +115,21 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=color_red,
+                text_color=color_btn_a,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", text_color=color_red
+                text_line_1="Error: Permission denied", text_color=color_btn_a
             )
             self.status.valid_credentials = True
         else:
-            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
-            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
-            self.ui.button_circle(
-                (233, 460),
-                "X",
-                (
-                    "Collections"
-                    if self.status.current_view == View.PLATFORMS
-                    else "Platforms"
-                ),
-                color=color_blue,
-            )
+            self.buttons_config = [
+                {"key": "A", "label": "Select", "color": color_btn_a},
+                {"key": "Y", "label": "Refresh", "color": color_btn_y},
+                {"key": "X", "label": "Collections", "color": color_btn_x},
+            ]
+            self.draw_buttons()
 
     def _update_platforms_view(self):
         if self.input.key("A"):
@@ -164,7 +178,7 @@ class RomM:
                 self.collections_selected_position,
                 self.max_n_collections,
                 self.status.collections,
-                fill=color_yellow,
+                fill=color_btn_b,
             )
         if not self.status.collections_ready.is_set():
             current_time = time.time()
@@ -176,7 +190,7 @@ class RomM:
             )
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
+                self.ui.draw_loader(self.status.extracted_percent, color=color_btn_b)
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
@@ -192,27 +206,21 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=color_red,
+                text_color=color_btn_a,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", text_color=color_red
+                text_line_1="Error: Permission denied", text_color=color_btn_a
             )
             self.status.valid_credentials = True
         else:
-            self.ui.button_circle((20, 460), "A", "Select", color=color_red)
-            self.ui.button_circle((123, 460), "Y", "Refresh", color=color_green)
-            self.ui.button_circle(
-                (233, 460),
-                "X",
-                (
-                    "Collections"
-                    if self.status.current_view == View.PLATFORMS
-                    else "Platforms"
-                ),
-                color=color_blue,
-            )
+            self.buttons_config = [
+                {"key": "A", "label": "Select", "color": color_btn_a},
+                {"key": "Y", "label": "Refresh", "color": color_btn_y},
+                {"key": "X", "label": "Platforms", "color": color_btn_x},
+            ]
+            self.draw_buttons()
 
     def _update_collections_view(self):
         if self.input.key("A"):
@@ -258,23 +266,23 @@ class RomM:
     def _render_roms_view(self):
         if len(self.status.roms) == 0 and self.status.roms_ready.is_set():
             header_text = "No ROMs available"
-            header_color = color_red
+            header_color = color_btn_a
             prepend_platform_slug = False
         elif self.status.selected_platform:
             header_text = self.status.platforms[
                 self.platforms_selected_position
             ].display_name
-            header_color = color_violet
+            header_color = color_sel
             prepend_platform_slug = False
         elif self.status.selected_collection or self.status.selected_virtual_collection:
             header_text = self.status.collections[
                 self.collections_selected_position
             ].name
-            header_color = color_yellow
+            header_color = color_btn_b
             prepend_platform_slug = True
         else:
             header_text = "ROMs"
-            header_color = color_violet
+            header_color = color_sel
             prepend_platform_slug = False
 
         total_pages = (
@@ -314,7 +322,7 @@ class RomM:
             self.ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching roms")
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
-                self.ui.draw_loader(self.status.extracted_percent, color=color_yellow)
+                self.ui.draw_loader(self.status.extracted_percent, color=color_btn_b)
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
                     text_line_2=f"({self.status.downloading_rom.fs_name})",
@@ -330,35 +338,49 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=color_red,
+                text_color=color_btn_a,
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", text_color=color_red
+                text_line_1="Error: Permission denied", text_color=color_btn_a
             )
             self.status.valid_credentials = True
         else:
-            self.ui.button_circle((20, 460), "A", "Download", color=color_red)
-            self.ui.button_circle((135, 460), "B", "Back", color=color_yellow)
-            self.ui.button_circle((215, 460), "Y", "Refresh", color=color_green)
-            self.ui.button_circle(
-                (320, 460),
-                "X",
-                f"Filter: {self.status.current_filter}",
-                color=color_blue,
-            )
-            self.ui.button_circle(
-                (435 + (len(str(self.status.current_filter)) * 9), 460),
-                "R1",
-                (
-                    "Deselect all"
-                    if len(self.status.multi_selected_roms)
-                    == len(self.status.roms_to_show)
-                    else "Select all"
-                ),
-                color=color_gray_1,
-            )
+            self.buttons_config = [
+                {"key": "A", "label": "Download", "color": color_btn_a},
+                {"key": "B", "label": "Back", "color": color_btn_b},
+                {"key": "Y", "label": "Refresh", "color": color_btn_y},
+                {
+                    "key": "X",
+                    "label": f"Filter:{self.status.current_filter}",
+                    "color": color_btn_x,
+                },
+                {
+                    "key": "L1",
+                    "label": (
+                        "Deselect rom"
+                        if (
+                            len(self.status.roms_to_show) > 0
+                            and self.status.roms_to_show[self.roms_selected_position]
+                            in self.status.multi_selected_roms
+                        )
+                        else "Select rom"
+                    ),
+                    "color": color_btn_shoulder,
+                },
+                {
+                    "key": "R1",
+                    "label": (
+                        "Deselect all"
+                        if len(self.status.multi_selected_roms)
+                        == len(self.status.roms_to_show)
+                        else "Select all"
+                    ),
+                    "color": color_btn_shoulder,
+                },
+            ]
+            self.draw_buttons()
 
     def _update_roms_view(self):
         if self.input.key("A"):
@@ -403,7 +425,7 @@ class RomM:
                 self.status.multi_selected_roms = []
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
-        elif self.input.key("SELECT"):
+        elif self.input.key("L1"):
             if (
                 self.status.download_rom_ready.is_set()
                 and len(self.status.roms_to_show) > 0
@@ -497,7 +519,7 @@ class RomM:
         padding = 5
         width = 200
         n_selectable_options = 3 if self.fs._sd2_roms_storage_path else 2
-        option_height = 32
+        option_height = 24
         gap = 3
         title = "Main menu"
         title_x_adjustment = 35
@@ -525,7 +547,7 @@ class RomM:
                 width=width,
                 height=option_height,
                 selected=selected_position == option[1],
-                color=color_white if option[1] > -1 else color_gray_2,
+                color=color_text if option[1] > -1 else color_menu_bg,
             )
 
         self.ui.draw_text(
@@ -598,11 +620,11 @@ class RomM:
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
-            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
+            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_btn_y)
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 f"Error: Can't connect to host\n{self.api.host}",
-                color=color_red,
+                color=color_btn_a,
                 anchor="mm",
             )
         elif not self.status.valid_credentials:
@@ -610,11 +632,11 @@ class RomM:
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
-            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_green)
+            self.ui.button_circle((20, 460), "Y", "Refresh", color=color_btn_y)
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 "Error: Permission denied",
-                color=color_red,
+                color=color_btn_a,
                 anchor="mm",
             )
         else:

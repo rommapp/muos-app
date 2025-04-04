@@ -110,7 +110,7 @@ class Input:
                         )
                 else:
                     print(f"Warning: Controller config file {config_str} not found")
-
+        else:
             print("No controller mappings loaded - using SDL defaults")
 
     def _add_key_pressed(self, key_name: str) -> None:
@@ -139,7 +139,6 @@ class Input:
                 if button in self._key_mapping:
                     key_name = self._key_mapping[button]
                     self._add_key_pressed(key_name)
-                    print(f"Button pressed: {key_name}")
                     return True
 
             # Controller button release
@@ -150,7 +149,6 @@ class Input:
                 if button in self._key_mapping:
                     key_name = self._key_mapping[button]
                     self._remove_key_held(key_name)
-                    print(f"Button released: {key_name}")
 
             # Controller axis motion
             elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
