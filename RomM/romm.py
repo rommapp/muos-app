@@ -5,7 +5,12 @@ from typing import Any, Tuple
 
 import sdl2
 import sdl2.ext
-from __version__ import version
+
+if os.path.exists(os.path.join(os.path.dirname(__file__), "__version__.py")):
+    from __version__ import version
+else:
+    version = "unknown"
+
 from api import API
 from filesystem import Filesystem
 from glyps import glyphs
@@ -22,6 +27,7 @@ from ui import (
     color_sel,
     color_text,
 )
+from update import Update
 
 
 class StartMenuOptions:
@@ -40,6 +46,7 @@ class RomM:
         self.input = Input()
         self.status = Status()
         self.ui = UserInterface()
+        self.updater = Update(self)
 
         self.contextual_menu_options: list[Tuple[str, int, Any]] = []
         self.start_menu_selected_position = 0
@@ -82,8 +89,64 @@ class RomM:
             )  # 20 is label_margin_l from button_circle
             pos_x += total_width + padding
 
+    def _check_for_updates(self):
+        self.ui.draw_clear()
+        if not self.status.updating.is_set():
+            current_time = time.time()
+            if current_time - self.last_spinner_update >= self.spinner_speed:
+                self.last_spinner_update = current_time
+                self.current_spinner_status = next(glyphs.spinner)
+            self.ui.draw_log(
+                text_line_1=f"{self.current_spinner_status} Checking for updates"
+            )
+
+        # Get latest release from GitHub API -- it has error handling so don't need to print here
+        release_info = self.updater.get_latest_release_info()
+
+        latest_tag = release_info.get("tag_name", "")
+        if not latest_tag:
+            print("Failed to find latest release tag")
+            self.status.updating.clear()
+            return
+
+        latest_version = latest_tag.lstrip("v")
+        download_url = None
+        for asset in release_info.get("assets", []):
+            if "browser_download_url" in asset:
+                download_url = asset["browser_download_url"]
+                break
+
+        if not download_url:
+            print("Failed to find download URL")
+            self.status.updating.clear()
+            return
+
+        # Compare versions
+        if (
+            self.updater.compare_versions(self.updater.current_version, latest_version)
+            < 0
+        ):
+            self.ui.draw_clear()
+            if self.updater.download_update(download_url):
+                self.ui.render_to_screen()
+                sdl2.SDL_Delay(1000)
+            else:
+                self.ui.draw_log(
+                    text_line_1="Update failed, proceeding with current version"
+                )
+                self.ui.render_to_screen()
+                sdl2.SDL_Delay(1000)
+        else:
+            self.ui.draw_log(
+                text_line_1=f"App is up to date (v{self.updater.current_version})"
+            )
+            self.ui.render_to_screen()
+            sdl2.SDL_Delay(1000)
+
+        self.status.updating.clear()
+
     def _render_platforms_view(self):
-        if self.status.platforms_ready.is_set():
+        if self.status.platforms_ready.is_set() and not self.status.updating.is_set():
             self.ui.draw_platforms_list(
                 self.platforms_selected_position,
                 self.max_n_platforms,
@@ -604,6 +667,7 @@ class RomM:
 
     def start(self):
         threading.Thread(target=self._monitor_input, daemon=True).start()
+        self._check_for_updates()
         self._render_platforms_view()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
