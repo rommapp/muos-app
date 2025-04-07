@@ -67,7 +67,6 @@ class Update:
             return None
 
     def download_update(self, url):
-        self.status.updating.set()
         self.update_filename = os.path.basename(url)
         filepath = self.update_filename
 
