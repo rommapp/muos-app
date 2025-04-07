@@ -41,6 +41,7 @@ class UserInterface:
         self.window = self._create_window()
         self.renderer = self._create_renderer()
         self.draw_start()
+        self.opt_stretch = True
 
     def __new__(cls):
         if not cls._instance:
@@ -88,6 +89,7 @@ class UserInterface:
             print(f"Failed to create renderer: {sdl2.SDL_GetError()}")
             raise RuntimeError("Failed to create renderer")
 
+        sdl2.SDL_SetHint(sdl2.SDL_HINT_RENDER_SCALE_QUALITY, b"0")
         return renderer
 
     def render_to_screen(self):
@@ -104,7 +106,7 @@ class UserInterface:
         texture = sdl2.SDL_CreateTextureFromSurface(self.renderer, surface)
         sdl2.SDL_FreeSurface(surface)
 
-        # Get current window size for scaling
+        # Get current window size
         window_width = ctypes.c_int()
         window_height = ctypes.c_int()
         sdl2.SDL_GetWindowSize(
@@ -112,15 +114,18 @@ class UserInterface:
         )
         window_width, window_height = window_width.value, window_height.value
 
-        # Calculate scaling to fit fullscreen while preserving 4:3 aspect ratio
-        scale = min(
-            window_width / self.screen_width, window_height / self.screen_height
-        )
-        dst_width = int(self.screen_width * scale)
-        dst_height = int(self.screen_height * scale)
-        dst_x = (window_width - dst_width) // 2
-        dst_y = (window_height - dst_height) // 2
-        dst_rect = sdl2.SDL_Rect(dst_x, dst_y, dst_width, dst_height)
+        # Let the user decide whether to stretch to fit or preserve aspect ratio
+        if not self.opt_stretch:
+            scale = min(
+                window_width / self.screen_width, window_height / self.screen_height
+            )
+            dst_width = int(self.screen_width * scale)
+            dst_height = int(self.screen_height * scale)
+            dst_x = (window_width - dst_width) // 2
+            dst_y = (window_height - dst_height) // 2
+            dst_rect = sdl2.SDL_Rect(dst_x, dst_y, dst_width, dst_height)
+        else:
+            dst_rect = sdl2.SDL_Rect(0, 0, window_width, window_height)
 
         sdl2.SDL_RenderCopy(self.renderer, texture, None, dst_rect)
         sdl2.SDL_RenderPresent(self.renderer)
