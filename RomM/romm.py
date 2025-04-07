@@ -172,6 +172,8 @@ class RomM:
                 self.ui.draw_clear()
                 if self.updater.download_update(self.download_url):
                     self.ui.draw_log(text_line_1="Update downloaded successfully")
+                    # We need to restart here so main.py can extract the update before we've loaded anything into memory
+                    os.execv(sys.executable, [sys.executable] + sys.argv)
                 else:
                     self.ui.draw_log(text_line_1="Update failed")
                 self.ui.render_to_screen()

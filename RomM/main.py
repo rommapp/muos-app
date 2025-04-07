@@ -2,9 +2,25 @@
 
 import os
 import sys
+import zipfile
 
-# Add the PIL and dotenv dependencies to the path
 base_path = os.path.dirname(os.path.abspath(__file__))
+
+# The archive contains a RomM folder with the contents inside;
+# We want to extract to the folder above the current one so it overwrites our application correctly
+update_path = os.path.join(base_path, "..")
+
+# Apply update if found
+update_archive = [f for f in os.listdir(base_path) if f.endswith(".muxapp")]
+
+if update_archive:
+    with zipfile.ZipFile(os.path.join(base_path, update_archive[0]), 'r') as zip_ref:
+        zip_ref.extractall(update_path)
+
+    os.remove(os.path.join(base_path, update_archive[0]))
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+# Add dependencies to path
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
