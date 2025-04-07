@@ -4,36 +4,37 @@ import os
 import sys
 import zipfile
 
-base_path = os.path.dirname(os.path.abspath(__file__))
-
-# The archive contains a RomM folder with the contents inside;
-# We want to extract to the folder above the current one so it overwrites our application correctly
-update_path = os.path.join(base_path, "..")
-
-# Apply update if found
-update_archive = [f for f in os.listdir(base_path) if f.endswith(".muxapp")]
-
-if update_archive:
-    with zipfile.ZipFile(os.path.join(base_path, update_archive[0]), 'r') as zip_ref:
-        zip_ref.extractall(update_path)
-
-    os.remove(os.path.join(base_path, update_archive[0]))
-    os.execv(sys.executable, [sys.executable] + sys.argv)
-
 # Add dependencies to path
+base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
-import sdl2
-import sdl2.ext
-from dotenv import load_dotenv
+def apply_update() -> bool:
+    # The archive contains a RomM folder with the contents inside
+    # We want to extract to the folder above the current one so it overwrites our application correctly
+    update_path = os.path.abspath(os.path.join(base_path, ".."))
+    update_files = [f for f in os.listdir(base_path) if f.endswith(".muxapp")]
+    if not update_files:
+        return False
 
-# Load .env file from one folder above
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
+    update_file = os.path.join(base_path, update_files[0])
+    try:
+        with zipfile.ZipFile(update_file, 'r') as zip_ref:
+            zip_ref.extractall(update_path)
+        os.remove(update_file)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+        return True
+    except (zipfile.BadZipFile, OSError) as e:
+        print(f"Failed to apply update: {e}", file=sys.stderr)
+        return False
 
-from romm import RomM
-
+# Check for update before initializing since it may overwrite our dependencies
+if not apply_update():
+    from dotenv import load_dotenv
+    import sdl2
+    from romm import RomM
+    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+    sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
 
 def cleanup(romm: RomM, exit_code: int):
     romm.ui.cleanup()
