@@ -107,8 +107,17 @@ class RomM:
             )
             self.ui.render_to_screen()
 
-        # Get latest release from GitHub API -- it has error handling so don't need to print here
+        # Get latest release from GitHub API
         release_info = self.updater.get_latest_release_info()
+
+        if release_info is None:
+            self.ui.draw_log(
+                text_line_1=f"{self.current_spinner_status} Failed to get release info, check internet connection"
+            )
+            self.ui.render_to_screen()
+            self.status.updating.clear()
+            sdl2.SDL_Delay(1000)
+            return
 
         latest_tag = release_info.get("tag_name", "")
         if not latest_tag:
