@@ -2,9 +2,14 @@
 # This is sometimes needed to match custom system folders with defaults, for example ES-DE uses roms/gc and some Batocera forks use roms/gamecube
 # https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/unix/es_systems.xml
 
-# Map: romm server system folder, romm client system folder, icon name
+# EmulationStation custom folder map
 _ES_FOLDER_MAP = {
-    "gc": ("gamecube", "ngc"),  # GameCube
+    #"slug": ("es-system", "icon"),
+    "ngc": ("gamecube", "ngc"),  # Nintendo GameCube
+    "n3ds": ("3ds", "3ds"), # Nintendo 3DS
+    "genesis": ("genesis", "genesis-slash-megadrive"), # Sega Genesis / Megadrive
+    "megadrive": ("megadrive", "genesis-slash-megadrive"), # Sega Genesis / Megadrive
+    "mastersystem": ("mastersystem", "sega-master-system"), # Sega Mastersystem
 }
 
 # Manual mapping of RomM slugs for MuOS default platforms
