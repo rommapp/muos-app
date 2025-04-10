@@ -23,7 +23,7 @@ def apply_update() -> bool:
         with zipfile.ZipFile(update_file, "r") as zip_ref:
             zip_ref.extractall(update_path)
         os.remove(update_file)
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+        os.execv(sys.executable, [sys.executable] + sys.argv)  # nosec B606
         return True
     except (zipfile.BadZipFile, OSError) as e:
         print(f"Failed to apply update: {e}", file=sys.stderr)
