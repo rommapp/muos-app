@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 import time
 from typing import Any, Tuple
@@ -738,7 +739,7 @@ class RomM:
             return
 
         if self.status.updating.is_set():
-            return 
+            return
 
         if self.status.me_ready.is_set():
             self.ui.draw_header(self.api.host, self.api.username)

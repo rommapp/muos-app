@@ -4,7 +4,6 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import sdl2
-
 from glyps import glyphs
 from ui import UserInterface
 

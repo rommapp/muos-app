@@ -9,6 +9,7 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
+
 def apply_update() -> bool:
     # The archive contains a RomM folder with the contents inside
     # We want to extract to the folder above the current one so it overwrites our application correctly
@@ -19,7 +20,7 @@ def apply_update() -> bool:
 
     update_file = os.path.join(base_path, update_files[0])
     try:
-        with zipfile.ZipFile(update_file, 'r') as zip_ref:
+        with zipfile.ZipFile(update_file, "r") as zip_ref:
             zip_ref.extractall(update_path)
         os.remove(update_file)
         os.execv(sys.executable, [sys.executable] + sys.argv)
@@ -28,13 +29,16 @@ def apply_update() -> bool:
         print(f"Failed to apply update: {e}", file=sys.stderr)
         return False
 
+
 # Check for update before initializing since it may overwrite our dependencies
 if not apply_update():
-    from dotenv import load_dotenv
     import sdl2
+    from dotenv import load_dotenv
     from romm import RomM
+
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
     sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
+
 
 def cleanup(romm: RomM, exit_code: int):
     romm.ui.cleanup()
