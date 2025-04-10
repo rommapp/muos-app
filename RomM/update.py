@@ -4,23 +4,25 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import sdl2
+from filesystem import Filesystem
 from glyps import glyphs
+from semver import Version
+from status import Status
 from ui import UserInterface
 
 
 class Update:
+    github_repo = "rommapp/muos-app"
 
-    REPO = "rommapp/muos-app"
-
-    def __init__(self, romm):
+    def __init__(self):
         self.ui = UserInterface()
-        self.status = romm.status
+        self.status = Status()
+        self.filesystem = Filesystem()
         self.current_version = self.get_current_version()
         self.download_percent = 0.0
-        self.update_filename = ""
         self.total_size = 0
 
-    def get_current_version(self):
+    def get_current_version(self) -> str:
         """Read the version from __version__.py in the current directory."""
         version_file = "__version__.py"
         if not os.path.exists(version_file):
@@ -36,27 +38,17 @@ class Update:
                 print("Failed to read version from __version__.py")
                 return "0.0.0"
 
-    def compare_versions(self, v1, v2):
-        """Compare two version strings (e.g., '0.3.0' < '0.4.0')."""
-        v1_parts = [int(x) for x in v1.split(".")]
-        v2_parts = [int(x) for x in v2.split(".")]
-        for i in range(max(len(v1_parts), len(v2_parts))):
-            part1 = v1_parts[i] if i < len(v1_parts) else 0
-            part2 = v2_parts[i] if i < len(v2_parts) else 0
-            if part1 < part2:
-                print(f"Current version: {v1}, Latest version: {v2}")
-                return -1
-            elif part1 > part2:
-                print(f"Current version: {v1}, Latest version: {v2}")
-                return 1
-        print(f"Current version: {v1}, Latest version: {v2}")
-        return 0
+    def update_available(self, v1, v2) -> bool:
+        v1 = Version.parse(v1)
+        v2 = Version.parse(v2)
 
-    def get_latest_release_info(self):
-        url = f"https://api.github.com/repos/{self.REPO}/releases/latest"
+        return v1 < v2
+
+    def get_latest_release_info(self) -> dict | None:
+        url = f"https://api.github.com/repos/{self.github_repo}/releases/latest"
         try:
             request = Request(url, headers={"Accept": "application/vnd.github.v3+json"})
-            with urlopen(request, timeout=10) as response:  # trunk-ignore(bandit/B310)
+            with urlopen(request, timeout=5) as response:  # trunk-ignore(bandit/B310)
                 data = response.read().decode("utf-8")
                 import json
 
@@ -65,10 +57,8 @@ class Update:
             print(f"Failed to fetch latest release info: {e}")
             return None
 
-    def download_update(self, url):
-        self.update_filename = os.path.basename(url)
-        filepath = self.update_filename
-
+    def download_update(self, url) -> bool:
+        update_filename = os.path.basename(url)
         try:
             request = Request(url)
             with urlopen(request) as response:  # trunk-ignore(bandit/B310)
@@ -77,7 +67,7 @@ class Update:
                 downloaded_bytes = 0
                 chunk_size = 1024
 
-                with open(filepath, "wb") as out_file:
+                with open(update_filename, "wb") as out_file:
                     while True:
                         chunk = response.read(chunk_size)
                         if not chunk:
@@ -90,7 +80,7 @@ class Update:
                         self.ui.draw_loader(self.download_percent)
                         self.ui.draw_log(
                             text_line_1="Downloading update...",
-                            text_line_2=f"{self.download_percent:.2f} / 100 % | ( {glyphs.download} {filepath})",
+                            text_line_2=f"{self.download_percent:.2f} / 100 % | ( {glyphs.download} {update_filename})",
                             background=True,
                         )
                         self.ui.render_to_screen()
@@ -102,6 +92,6 @@ class Update:
         except (HTTPError, URLError) as e:
             print(f"Update download failed: {e}")
             self.status.updating.clear()
-            if os.path.exists(filepath):
-                os.remove(filepath)
+            if os.path.exists(update_filename):
+                os.remove(update_filename)
             return False

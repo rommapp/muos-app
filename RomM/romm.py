@@ -1,5 +1,4 @@
 import os
-import sys
 import threading
 import time
 from typing import Any, Tuple
@@ -47,7 +46,7 @@ class RomM:
         self.input = Input()
         self.status = Status()
         self.ui = UserInterface()
-        self.updater = Update(self)
+        self.updater = Update()
 
         self.contextual_menu_options: list[Tuple[str, int, Any]] = []
         self.start_menu_selected_position = 0
@@ -98,15 +97,15 @@ class RomM:
     def _check_for_updates(self):
         self.ui.draw_clear()
         self.status.updating.set()
-        if self.status.updating.is_set():
-            current_time = time.time()
-            if current_time - self.last_spinner_update >= self.spinner_speed:
-                self.last_spinner_update = current_time
-                self.current_spinner_status = next(glyphs.spinner)
-            self.ui.draw_log(
-                text_line_1=f"{self.current_spinner_status} Checking for updates"
-            )
-            self.ui.render_to_screen()
+
+        current_time = time.time()
+        if current_time - self.last_spinner_update >= self.spinner_speed:
+            self.last_spinner_update = current_time
+            self.current_spinner_status = next(glyphs.spinner)
+        self.ui.draw_log(
+            text_line_1=f"{self.current_spinner_status} Checking for updates"
+        )
+        self.ui.render_to_screen()
 
         # Get latest release from GitHub API
         release_info = self.updater.get_latest_release_info()
@@ -138,11 +137,11 @@ class RomM:
             self.status.updating.clear()
             return
 
+        print(f"Current version: {self.updater.current_version}")
+        print(f"Latest version: {latest_version}")
+
         # Compare versions
-        if (
-            self.updater.compare_versions(self.updater.current_version, latest_version)
-            < 0
-        ):
+        if self.updater.update_available(self.updater.current_version, latest_version):
             self.awaiting_input = True
             self.latest_version = latest_version
             self.download_url = download_url
@@ -181,9 +180,13 @@ class RomM:
                 self.awaiting_input = False
                 self.ui.draw_clear()
                 if self.updater.download_update(self.download_url):
-                    self.ui.draw_log(text_line_1="Update downloaded successfully")
-                    # We need to restart here so main.py can extract the update before we've loaded anything into memory
-                    os.execv(sys.executable, [sys.executable] + sys.argv)  # nosec B606
+                    self.ui.draw_log(
+                        text_line_1="Update downloaded successfully!",
+                        text_line_2="App will now exit...",
+                    )
+                    self.ui.render_to_screen()
+                    sdl2.SDL_Delay(1000)
+                    raise SystemExit
                 else:
                     self.ui.draw_log(text_line_1="Update failed")
                 self.ui.render_to_screen()

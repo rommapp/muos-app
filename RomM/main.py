@@ -1,5 +1,3 @@
-# trunk-ignore-all(ruff/E402)
-
 import os
 import sys
 import zipfile
@@ -10,7 +8,7 @@ libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
 
-def apply_update() -> bool:
+def apply_pending_update() -> bool:
     # The archive contains a RomM folder with the contents inside
     # We want to extract to the folder above the current one so it overwrites our application correctly
     update_path = os.path.abspath(os.path.join(base_path, ".."))
@@ -23,15 +21,16 @@ def apply_update() -> bool:
         with zipfile.ZipFile(update_file, "r") as zip_ref:
             zip_ref.extractall(update_path)
         os.remove(update_file)
-        os.execv(sys.executable, [sys.executable] + sys.argv)  # nosec B606
-        return True
+
+        sys.stdout.close()
+        sys.exit(0)
     except (zipfile.BadZipFile, OSError) as e:
         print(f"Failed to apply update: {e}", file=sys.stderr)
         return False
 
 
 # Check for update before initializing since it may overwrite our dependencies
-if not apply_update():
+if not apply_pending_update():
     import sdl2
     from dotenv import load_dotenv
     from romm import RomM
