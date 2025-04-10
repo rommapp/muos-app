@@ -95,34 +95,15 @@ class RomM:
             pos_x += total_width + padding
 
     def _check_for_updates(self):
-        self.ui.draw_clear()
-        self.status.updating.set()
-
-        current_time = time.time()
-        if current_time - self.last_spinner_update >= self.spinner_speed:
-            self.last_spinner_update = current_time
-            self.current_spinner_status = next(glyphs.spinner)
-        self.ui.draw_log(
-            text_line_1=f"{self.current_spinner_status} Checking for updates"
-        )
-        self.ui.render_to_screen()
-
         # Get latest release from GitHub API
         release_info = self.updater.get_latest_release_info()
 
         if release_info is None:
-            self.ui.draw_log(
-                text_line_1=f"{self.current_spinner_status} Failed to get release info, check internet connection"
-            )
-            self.ui.render_to_screen()
-            self.status.updating.clear()
-            sdl2.SDL_Delay(1000)
             return
 
         latest_tag = release_info.get("tag_name", "")
         if not latest_tag:
             print("Failed to find latest release tag")
-            self.status.updating.clear()
             return
 
         latest_version = latest_tag.lstrip("v")
@@ -134,25 +115,17 @@ class RomM:
 
         if not download_url:
             print("Failed to find download URL")
-            self.status.updating.clear()
             return
 
         print(f"Current version: {self.updater.current_version}")
         print(f"Latest version: {latest_version}")
 
-        # Compare versions
         if self.updater.update_available(self.updater.current_version, latest_version):
-            self.awaiting_input = True
+            self.ui.draw_clear()
+            self.status.updating.set()
             self.latest_version = latest_version
             self.download_url = download_url
-        else:
-            self.ui.draw_clear()
-            self.ui.draw_log(
-                text_line_1=f"App is up to date (v{self.updater.current_version})"
-            )
-            self.ui.render_to_screen()
-            self.status.updating.clear()
-            sdl2.SDL_Delay(1000)
+            self.awaiting_input = True
 
     def _handle_update_confirmation(self):
         if self.awaiting_input:
@@ -194,13 +167,8 @@ class RomM:
                 self.status.updating.clear()
             elif self.input.key("B"):
                 self.awaiting_input = False
-                self.ui.draw_clear()
-                self.ui.draw_log(
-                    text_line_1=f"Proceeding with current version (v{self.updater.current_version})"
-                )
-                self.ui.render_to_screen()
-                sdl2.SDL_Delay(1000)
                 self.status.updating.clear()
+                self.ui.draw_clear()
 
     def _render_platforms_view(self):
         if self.status.updating.is_set():
@@ -726,10 +694,9 @@ class RomM:
                     self.running = False
 
     def start(self):
+        self._render_platforms_view()
         threading.Thread(target=self._monitor_input, daemon=True).start()
-        self._check_for_updates()
-        if not self.status.updating.is_set():
-            self._render_platforms_view()
+        threading.Thread(target=self._check_for_updates).start()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
         threading.Thread(target=self.api.fetch_me).start()
