@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from typing import Any, Tuple
+from typing import Any, Tuple, List, Dict
 
 import sdl2
 import sdl2.ext
@@ -17,11 +17,6 @@ from config import (
     get_controller_layout,
     set_controller_layout,
     save_controller_layout,
-    color_btn_a,
-    color_btn_b,
-    color_btn_x,
-    color_btn_y,
-    color_btn_shoulder,
 )
 from filesystem import Filesystem
 from glyps import glyphs
@@ -29,11 +24,12 @@ from input import Input
 from status import Filter, Status, View
 from ui import (
     UserInterface,
-    color_row_bg,
     color_menu_bg,
     color_text,
 )
 from update import Update
+
+ButtonConfig = Dict[str, str]
 
 
 class StartMenuOptions:
@@ -65,7 +61,7 @@ class RomM:
         self.max_n_platforms = 10
         self.max_n_collections = 10
         self.max_n_roms = 10
-        self.buttons_config = []
+        self.buttons_config: List[ButtonConfig] = []
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
@@ -421,7 +417,7 @@ class RomM:
             prepend_platform_slug = True
         else:
             header_text = "ROMs"
-            header_color = color_btn_a
+            header_color = get_controller_layout()[0]["color"]
             prepend_platform_slug = False
 
         total_pages = (

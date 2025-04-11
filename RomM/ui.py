@@ -11,16 +11,13 @@ from models import Collection, Platform, Rom
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
 
-FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
-
 from config import (
     get_controller_layout,
     color_btn_a,
     color_btn_b,
-    color_btn_x,
-    color_btn_y,
-    color_btn_shoulder,
 )
+
+FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
 
 color_row_bg = "#383838"
 color_menu_bg = "#141414"
@@ -188,7 +185,7 @@ class UserInterface:
         width: int,
         height: int,
         selected: bool = False,
-        fill: str = None,
+        fill: Optional[str] = None,
         color: str = color_text,
         outline: str | None = None,
         append_icon_path: str | None = None,
@@ -248,7 +245,7 @@ class UserInterface:
         position: ImageDraw.Coords,
         button: str,
         text: str,
-        color: str = None,
+        color: Optional[str] = None,
     ):
         if color is None:
             color = color_btn_a if self.layout_name == "nintendo" else color_btn_b
@@ -394,7 +391,7 @@ class UserInterface:
         platforms_selected_position: int,
         max_n_platforms: int,
         platforms: list[Platform],
-        fill: str = None,
+        fill: Optional[str] = None,
     ):
         if fill is None:
             fill = color_btn_a if self.layout_name == "nintendo" else color_btn_b
@@ -439,7 +436,7 @@ class UserInterface:
         collections_selected_position: int,
         max_n_collections: int,
         collections: list[Collection],
-        fill: str = None,
+        fill: Optional[str] = None,
     ):
         if fill is None:
             fill = color_btn_b if self.layout_name == "nintendo" else color_btn_a

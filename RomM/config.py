@@ -1,6 +1,5 @@
 import os
 import re
-from PIL import Image, ImageDraw, ImageFont
 
 color_btn_a = "#ad3c6b"
 color_btn_b = "#bb7200"
