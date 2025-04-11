@@ -33,10 +33,14 @@ def apply_pending_update() -> bool:
 if not apply_pending_update():
     import sdl2
     from dotenv import load_dotenv
+    from config import set_controller_layout
     from romm import RomM
 
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-    sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
+    set_controller_layout(os.getenv("CONTROLLER_LAYOUT", "nintendo"))
+    log_file = os.environ.get("LOG_FILE", "./logs/log.txt")
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    sys.stdout = open(log_file, "w", buffering=1)
 
 
 def cleanup(romm: RomM, exit_code: int):
