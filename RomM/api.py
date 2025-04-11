@@ -517,9 +517,10 @@ class API:
                     self._reset_download_status()
                     return
                 print(f"Downloading {rom.name} to {dest_path}")
-                with urlopen(request) as response, open(  # trunk-ignore(bandit/B310)
-                    dest_path, "wb"
-                ) as out_file:
+                with (
+                    urlopen(request) as response,  # trunk-ignore(bandit/B310)
+                    open(dest_path, "wb") as out_file,
+                ):
                     self.status.total_downloaded_bytes = 0
                     chunk_size = 1024
                     while True:
@@ -557,9 +558,10 @@ class API:
                                     self._sanitize_filename(file.filename),
                                 )
                                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                                with zip_ref.open(file) as source, open(
-                                    file_path, "wb"
-                                ) as target:
+                                with (
+                                    zip_ref.open(file) as source,
+                                    open(file_path, "wb") as target,
+                                ):
                                     while True:
                                         chunk = source.read(chunk_size)
                                         if not chunk:

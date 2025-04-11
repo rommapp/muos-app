@@ -5,7 +5,12 @@ from typing import Any, Tuple
 
 import sdl2
 import sdl2.ext
-from __version__ import version
+
+if os.path.exists(os.path.join(os.path.dirname(__file__), "__version__.py")):
+    from __version__ import version
+else:
+    version = "unknown"
+
 from api import API
 from filesystem import Filesystem
 from glyps import glyphs
@@ -22,6 +27,7 @@ from ui import (
     color_sel,
     color_text,
 )
+from update import Update
 
 
 class StartMenuOptions:
@@ -40,6 +46,7 @@ class RomM:
         self.input = Input()
         self.status = Status()
         self.ui = UserInterface()
+        self.updater = Update()
 
         self.contextual_menu_options: list[Tuple[str, int, Any]] = []
         self.start_menu_selected_position = 0
@@ -55,6 +62,11 @@ class RomM:
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
+
+        # Set update variables
+        self.awaiting_input = False
+        self.latest_version = None
+        self.download_url = None
 
         # Set start menu options
         self.start_menu_options = [
@@ -82,7 +94,86 @@ class RomM:
             )  # 20 is label_margin_l from button_circle
             pos_x += total_width + padding
 
+    def _check_for_updates(self):
+        # Get latest release from GitHub API
+        release_info = self.updater.get_latest_release_info()
+
+        if release_info is None:
+            return
+
+        latest_tag = release_info.get("tag_name", "")
+        if not latest_tag:
+            print("Failed to find latest release tag")
+            return
+
+        latest_version = latest_tag.lstrip("v")
+        download_url = None
+        for asset in release_info.get("assets", []):
+            if "browser_download_url" in asset:
+                download_url = asset["browser_download_url"]
+                break
+
+        if not download_url:
+            print("Failed to find download URL")
+            return
+
+        print(f"Current version: {self.updater.current_version}")
+        print(f"Latest version: {latest_version}")
+
+        if self.updater.update_available(self.updater.current_version, latest_version):
+            self.ui.draw_clear()
+            self.status.updating.set()
+            self.latest_version = latest_version
+            self.download_url = download_url
+            self.awaiting_input = True
+
+    def _handle_update_confirmation(self):
+        if self.awaiting_input:
+            sdl2.SDL_Delay(100)
+            self.ui.draw_clear()
+            self.ui.draw_text(
+                (self.ui.screen_width / 2, self.ui.screen_height / 2 - 20),
+                f"New RomM App version available: v{self.latest_version}",
+                color=color_text,
+                anchor="mm",
+            )
+            self.ui.draw_text(
+                (self.ui.screen_width / 2, self.ui.screen_height / 2 + 20),
+                "Download update?",
+                color=color_text,
+                anchor="mm",
+            )
+            self.buttons_config = [
+                {"key": "A", "label": "Yes", "color": color_btn_a},
+                {"key": "B", "label": "No", "color": color_btn_b},
+            ]
+            self.draw_buttons()
+
+            if self.input.key("A"):
+                self.awaiting_input = False
+                self.ui.draw_clear()
+                if self.updater.download_update(self.download_url):
+                    self.ui.draw_log(
+                        text_line_1="Update downloaded successfully!",
+                        text_line_2="App will now exit...",
+                    )
+                    self.ui.render_to_screen()
+                    sdl2.SDL_Delay(1000)
+                    raise SystemExit
+                else:
+                    self.ui.draw_log(text_line_1="Update failed")
+                self.ui.render_to_screen()
+                sdl2.SDL_Delay(1000)
+                self.status.updating.clear()
+            elif self.input.key("B"):
+                self.awaiting_input = False
+                self.status.updating.clear()
+                self.ui.draw_clear()
+
     def _render_platforms_view(self):
+        if self.status.updating.is_set():
+            return
+
         if self.status.platforms_ready.is_set():
             self.ui.draw_platforms_list(
                 self.platforms_selected_position,
@@ -603,14 +694,22 @@ class RomM:
                     self.running = False
 
     def start(self):
-        threading.Thread(target=self._monitor_input, daemon=True).start()
         self._render_platforms_view()
+        threading.Thread(target=self._monitor_input, daemon=True).start()
+        threading.Thread(target=self._check_for_updates).start()
         threading.Thread(target=self.api.fetch_platforms).start()
         threading.Thread(target=self.api.fetch_collections).start()
         threading.Thread(target=self.api.fetch_me).start()
 
     def update(self):
         self.ui.draw_clear()
+
+        if self.awaiting_input:
+            self._handle_update_confirmation()
+            return
+
+        if self.status.updating.is_set():
+            return
 
         if self.status.me_ready.is_set():
             self.ui.draw_header(self.api.host, self.api.username)

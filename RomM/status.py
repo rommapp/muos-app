@@ -54,6 +54,7 @@ class Status:
         self.download_rom_ready = threading.Event()
         self.abort_download = threading.Event()
         self.me_ready = threading.Event()
+        self.updating = threading.Event()
 
         # Initialize events what won't launch at startup
         self.roms_ready.set()

@@ -1,22 +1,42 @@
-# trunk-ignore-all(ruff/E402)
-
 import os
 import sys
+import zipfile
 
-# Add the PIL and dotenv dependencies to the path
+# Add dependencies to path
 base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
-import sdl2
-import sdl2.ext
-from dotenv import load_dotenv
 
-# Load .env file from one folder above
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
+def apply_pending_update() -> bool:
+    # The archive contains a RomM folder with the contents inside
+    # We want to extract to the folder above the current one so it overwrites our application correctly
+    update_path = os.path.abspath(os.path.join(base_path, ".."))
+    update_files = [f for f in os.listdir(base_path) if f.endswith(".muxapp")]
+    if not update_files:
+        return False
 
-from romm import RomM
+    update_file = os.path.join(base_path, update_files[0])
+    try:
+        with zipfile.ZipFile(update_file, "r") as zip_ref:
+            zip_ref.extractall(update_path)
+        os.remove(update_file)
+
+        sys.stdout.close()
+        sys.exit(0)
+    except (zipfile.BadZipFile, OSError) as e:
+        print(f"Failed to apply update: {e}", file=sys.stderr)
+        return False
+
+
+# Check for update before initializing since it may overwrite our dependencies
+if not apply_pending_update():
+    import sdl2
+    from dotenv import load_dotenv
+    from romm import RomM
+
+    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+    sys.stdout = open(os.environ.get("LOG_FILE", "./logs/log.txt"), "w", buffering=1)
 
 
 def cleanup(romm: RomM, exit_code: int):
