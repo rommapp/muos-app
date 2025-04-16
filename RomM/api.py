@@ -283,7 +283,6 @@ class API:
                 if not os.path.exists(icon_path):
                     self._fetch_platform_icon(platform["slug"])
 
-        _platforms.sort(key=lambda platform: platform.display_name)
         self.status.platforms = _platforms
         print(f"Fetched {len(_platforms)} platforms")
         self.status.valid_host = True
@@ -376,8 +375,6 @@ class API:
                     )
                 )
 
-        _collections.sort(key=lambda collection: collection.name)
-
         self.status.collections = _collections
         self.status.valid_host = True
         self.status.valid_credentials = True
@@ -401,7 +398,7 @@ class API:
 
         try:
             request = Request(
-                f"{self.host}/{self._roms_endpoint}?{view}_id={id}&order_by=name&order_dir=asc",
+                f"{self.host}/{self._roms_endpoint}?{view}_id={id}&order_by=name&order_dir=asc&limit=1000",
                 headers=self.headers,
             )
         except ValueError:
@@ -429,6 +426,8 @@ class API:
             self.status.valid_host = False
             self.status.valid_credentials = False
             return
+
+        # { 'items': list[dict], 'total': number, 'limit': number, 'offset': number }
         roms = json.loads(response.read().decode("utf-8"))
         if isinstance(roms, dict):
             roms = roms["items"]
@@ -474,7 +473,7 @@ class API:
                     tags=rom["tags"],
                 )
             )
-        _roms.sort(key=lambda rom: rom.name)
+
         self.status.roms = _roms
         self.status.valid_host = True
         self.status.valid_credentials = True

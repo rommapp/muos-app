@@ -5,8 +5,9 @@ alias b := build
 alias z := zip
 alias p := upload
 
-default: clean build upload
-muxapp: clean build zip upload-app
+default: clean copy build upload
+update: copy upload-update
+muxapp: clean copy build zip upload-app
 
 clean:
 	@echo "Cleaning..."
@@ -23,7 +24,7 @@ version := `
 	echo ${VERSION}'
 `
 
-build:
+copy:
 	@echo "Building..."
 
 	mkdir -p .build
@@ -33,6 +34,7 @@ build:
 	sed "s/<version>/{{ version }}/" .build/RomM/__version__.py > .build/RomM/__version__.py.new
 	mv .build/RomM/__version__.py.new .build/RomM/__version__.py
 
+build:
 	@echo "Copying Python dependencies..."
 
 	uv pip freeze > .build/requirements.txt
@@ -76,3 +78,8 @@ upload-app:
     just connect
     if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group -e "ssh -i \"$PRIVATE_KEY_PATH\"" .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
     if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group -e ssh  .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
+
+upload-update:
+    just connect
+    if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group --exclude 'deps/*' --exclude 'libs/*' -e "ssh -i \"$PRIVATE_KEY_PATH\"" .build/RomM root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/MUOS/application/; echo "Upload successful"; exit 0; fi
+    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group --exclude 'deps/*' --exclude 'libs/*' -e ssh .build/RomM root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/MUOS/application/; echo "Upload successful"; exit 0; fi
