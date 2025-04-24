@@ -34,7 +34,6 @@ if not apply_pending_update():
     import sdl2
     from config import set_controller_layout
     from dotenv import load_dotenv
-
     from romm import RomM
 
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
