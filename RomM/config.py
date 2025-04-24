@@ -34,7 +34,7 @@ def get_controller_layout():
     return BUTTON_CONFIGS.get(CONTROLLER_LAYOUT, BUTTON_CONFIGS["nintendo"])
 
 
-def set_controller_layout(layout):
+def set_controller_layout(layout: str):
     global CONTROLLER_LAYOUT
     if layout in BUTTON_CONFIGS:
         CONTROLLER_LAYOUT = layout

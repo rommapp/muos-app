@@ -38,6 +38,8 @@ if not apply_pending_update():
 
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
     set_controller_layout(os.getenv("CONTROLLER_LAYOUT", "nintendo"))
+
+    # Set up logging
     log_file = os.environ.get("LOG_FILE", "./logs/log.txt")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     sys.stdout = open(log_file, "w", buffering=1)
