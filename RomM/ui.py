@@ -8,7 +8,6 @@ import sdl2
 from config import (
     color_btn_a,
     color_btn_b,
-    get_controller_layout,
 )
 from filesystem import Filesystem
 from glyps import glyphs
@@ -34,7 +33,6 @@ class UserInterface:
     screen_height = 480
     font_file = FONT_FILE
     layout_name = os.getenv("CONTROLLER_LAYOUT", "nintendo")
-    current_layout = get_controller_layout()
 
     active_image: Image.Image
     active_draw: ImageDraw.ImageDraw

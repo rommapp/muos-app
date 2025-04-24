@@ -62,6 +62,7 @@ class RomM:
         self.max_n_collections = 10
         self.max_n_roms = 10
         self.buttons_config: List[ButtonConfig] = []
+        self.controller_layout = get_controller_layout()
 
         self.last_spinner_update = time.time()
         self.current_spinner_status = next(glyphs.spinner)
@@ -152,19 +153,19 @@ class RomM:
             )
             self.buttons_config = [
                 {
-                    "key": get_controller_layout()[0]["btn"],
+                    "key": self.controller_layout["a"]["btn"],
                     "label": "Yes",
-                    "color": get_controller_layout()[0]["color"],
+                    "color": self.controller_layout["a"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[1]["btn"],
+                    "key": self.controller_layout["b"]["btn"],
                     "label": "No",
-                    "color": get_controller_layout()[1]["color"],
+                    "color": self.controller_layout["b"]["color"],
                 },
             ]
             self.draw_buttons()
 
-            if self.input.key(get_controller_layout()[0]["key"]):
+            if self.input.key(self.controller_layout["a"]["key"]):
                 self.awaiting_input = False
                 self.ui.draw_clear()
                 if self.updater.download_update(self.download_url):
@@ -180,7 +181,7 @@ class RomM:
                 self.ui.render_to_screen()
                 sdl2.SDL_Delay(1000)
                 self.status.updating.clear()
-            elif self.input.key(get_controller_layout()[1]["key"]):
+            elif self.input.key(self.controller_layout["b"]["key"]):
                 self.awaiting_input = False
                 self.status.updating.clear()
                 self.ui.draw_clear()
@@ -207,7 +208,7 @@ class RomM:
             if self.status.extracting_rom:
                 self.ui.draw_loader(
                     self.status.extracted_percent,
-                    color=get_controller_layout()[1]["color"],
+                    color=self.controller_layout["b"]["color"],
                 )
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
@@ -224,37 +225,37 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=get_controller_layout()[0]["color"],
+                text_color=self.controller_layout["a"]["color"],
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
                 text_line_1="Error: Permission denied",
-                text_color=get_controller_layout()[0]["color"],
+                text_color=self.controller_layout["a"]["color"],
             )
             self.status.valid_credentials = True
         else:
             self.buttons_config = [
                 {
-                    "key": get_controller_layout()[0]["btn"],
+                    "key": self.controller_layout["a"]["btn"],
                     "label": "Select",
-                    "color": get_controller_layout()[0]["color"],
+                    "color": self.controller_layout["a"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[3]["btn"],
+                    "key": self.controller_layout["y"]["btn"],
                     "label": "Refresh",
-                    "color": get_controller_layout()[3]["color"],
+                    "color": self.controller_layout["y"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[2]["btn"],
+                    "key": self.controller_layout["x"]["btn"],
                     "label": "Collections",
-                    "color": get_controller_layout()[2]["color"],
+                    "color": self.controller_layout["x"]["color"],
                 },
             ]
             self.draw_buttons()
 
     def _update_platforms_view(self):
-        if self.input.key(get_controller_layout()[0]["key"]):
+        if self.input.key(self.controller_layout["a"]["key"]):
             if self.status.roms_ready.is_set() and len(self.status.platforms) > 0:
                 self.status.roms_ready.clear()
                 self.status.roms = []
@@ -263,11 +264,11 @@ class RomM:
                 ]
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
-        elif self.input.key(get_controller_layout()[3]["key"]):
+        elif self.input.key(self.controller_layout["y"]["key"]):
             if self.status.platforms_ready.is_set():
                 self.status.platforms_ready.clear()
                 threading.Thread(target=self.api.fetch_platforms).start()
-        elif self.input.key(get_controller_layout()[2]["key"]):
+        elif self.input.key(self.controller_layout["x"]["key"]):
             self.status.current_view = View.COLLECTIONS
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
@@ -300,7 +301,7 @@ class RomM:
                 self.collections_selected_position,
                 self.max_n_collections,
                 self.status.collections,
-                fill=get_controller_layout()[1]["color"],
+                fill=self.controller_layout["b"]["color"],
             )
         if not self.status.collections_ready.is_set():
             current_time = time.time()
@@ -314,7 +315,7 @@ class RomM:
             if self.status.extracting_rom:
                 self.ui.draw_loader(
                     self.status.extracted_percent,
-                    color=get_controller_layout()[1]["color"],
+                    color=self.controller_layout["b"]["color"],
                 )
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
@@ -331,37 +332,37 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=get_controller_layout()[0]["color"],
+                text_color=self.controller_layout["a"]["color"],
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
                 text_line_1="Error: Permission denied",
-                text_color=get_controller_layout()[0]["color"],
+                text_color=self.controller_layout["a"]["color"],
             )
             self.status.valid_credentials = True
         else:
             self.buttons_config = [
                 {
-                    "key": get_controller_layout()[0]["btn"],
+                    "key": self.controller_layout["a"]["btn"],
                     "label": "Select",
-                    "color": get_controller_layout()[0]["color"],
+                    "color": self.controller_layout["a"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[3]["btn"],
+                    "key": self.controller_layout["y"]["btn"],
                     "label": "Refresh",
-                    "color": get_controller_layout()[3]["color"],
+                    "color": self.controller_layout["y"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[2]["btn"],
+                    "key": self.controller_layout["x"]["btn"],
                     "label": "Platforms",
-                    "color": get_controller_layout()[2]["color"],
+                    "color": self.controller_layout["x"]["color"],
                 },
             ]
             self.draw_buttons()
 
     def _update_collections_view(self):
-        if self.input.key(get_controller_layout()[0]["key"]):
+        if self.input.key(self.controller_layout["a"]["key"]):
             if self.status.roms_ready.is_set() and len(self.status.collections) > 0:
                 self.status.roms_ready.clear()
                 self.status.roms = []
@@ -374,11 +375,11 @@ class RomM:
                     self.status.selected_collection = selected_collection
                 self.status.current_view = View.ROMS
                 threading.Thread(target=self.api.fetch_roms).start()
-        elif self.input.key(get_controller_layout()[3]["key"]):
+        elif self.input.key(self.controller_layout["y"]["key"]):
             if self.status.collections_ready.is_set():
                 self.status.collections_ready.clear()
                 threading.Thread(target=self.api.fetch_collections).start()
-        elif self.input.key(get_controller_layout()[2]["key"]):
+        elif self.input.key(self.controller_layout["x"]["key"]):
             self.status.current_view = View.PLATFORMS
         elif self.input.key("START"):
             self.status.show_contextual_menu = not self.status.show_contextual_menu
@@ -404,23 +405,23 @@ class RomM:
     def _render_roms_view(self):
         if len(self.status.roms) == 0 and self.status.roms_ready.is_set():
             header_text = "No ROMs available"
-            header_color = get_controller_layout()[0]["color"]
+            header_color = self.controller_layout["a"]["color"]
             prepend_platform_slug = False
         elif self.status.selected_platform:
             header_text = self.status.platforms[
                 self.platforms_selected_position
             ].display_name
-            header_color = get_controller_layout()[0]["color"]
+            header_color = self.controller_layout["a"]["color"]
             prepend_platform_slug = False
         elif self.status.selected_collection or self.status.selected_virtual_collection:
             header_text = self.status.collections[
                 self.collections_selected_position
             ].name
-            header_color = get_controller_layout()[1]["color"]
+            header_color = self.controller_layout["b"]["color"]
             prepend_platform_slug = True
         else:
             header_text = "ROMs"
-            header_color = get_controller_layout()[0]["color"]
+            header_color = self.controller_layout["a"]["color"]
             prepend_platform_slug = False
 
         total_pages = (
@@ -462,7 +463,7 @@ class RomM:
             if self.status.extracting_rom:
                 self.ui.draw_loader(
                     self.status.extracted_percent,
-                    color=get_controller_layout()[1]["color"],
+                    color=self.controller_layout["b"]["color"],
                 )
                 self.ui.draw_log(
                     text_line_1=f"{self.status.downloading_rom_position}/{len(self.status.download_queue)} | {self.status.extracted_percent:.2f}% | Extracting {self.status.downloading_rom.name}",
@@ -479,39 +480,39 @@ class RomM:
         elif not self.status.valid_host:
             self.ui.draw_log(
                 text_line_1=f"Error: Can't connect to host {self.api.host}",
-                text_color=get_controller_layout()[0]["color"],
+                text_color=self.controller_layout["a"]["color"],
             )
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
                 text_line_1="Error: Permission denied",
-                text_color=get_controller_layout()[0]["color"],
+                text_color=self.controller_layout["a"]["color"],
             )
             self.status.valid_credentials = True
         else:
             self.buttons_config = [
                 {
-                    "key": get_controller_layout()[0]["btn"],
+                    "key": self.controller_layout["a"]["btn"],
                     "label": "Download",
-                    "color": get_controller_layout()[0]["color"],
+                    "color": self.controller_layout["a"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[1]["btn"],
+                    "key": self.controller_layout["b"]["btn"],
                     "label": "Back",
-                    "color": get_controller_layout()[1]["color"],
+                    "color": self.controller_layout["b"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[3]["btn"],
+                    "key": self.controller_layout["y"]["btn"],
                     "label": "Refresh",
-                    "color": get_controller_layout()[3]["color"],
+                    "color": self.controller_layout["y"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[2]["btn"],
+                    "key": self.controller_layout["x"]["btn"],
                     "label": f"Filter:{self.status.current_filter}",
-                    "color": get_controller_layout()[2]["color"],
+                    "color": self.controller_layout["x"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[4]["btn"],
+                    "key": self.controller_layout["l1"]["btn"],
                     "label": (
                         "Deselect rom"
                         if (
@@ -521,23 +522,23 @@ class RomM:
                         )
                         else "Select rom"
                     ),
-                    "color": get_controller_layout()[4]["color"],
+                    "color": self.controller_layout["l1"]["color"],
                 },
                 {
-                    "key": get_controller_layout()[5]["btn"],
+                    "key": self.controller_layout["r1"]["btn"],
                     "label": (
                         "Deselect all"
                         if len(self.status.multi_selected_roms)
                         == len(self.status.roms_to_show)
                         else "Select all"
                     ),
-                    "color": get_controller_layout()[5]["color"],
+                    "color": self.controller_layout["r1"]["color"],
                 },
             ]
             self.draw_buttons()
 
     def _update_roms_view(self):
-        if self.input.key(get_controller_layout()[0]["key"]):
+        if self.input.key(self.controller_layout["a"]["key"]):
             if (
                 self.status.roms_ready.is_set()
                 and self.status.download_rom_ready.is_set()
@@ -551,7 +552,7 @@ class RomM:
                 self.status.download_queue = self.status.multi_selected_roms
                 self.status.abort_download.clear()
                 threading.Thread(target=self.api.download_rom).start()
-        elif self.input.key(get_controller_layout()[1]["key"]):
+        elif self.input.key(self.controller_layout["b"]["key"]):
             if self.status.selected_platform:
                 self.status.current_view = View.PLATFORMS
                 self.status.selected_platform = None
@@ -566,20 +567,20 @@ class RomM:
             self.status.reset_roms_list()
             self.roms_selected_position = 0
             self.status.multi_selected_roms = []
-        elif self.input.key(get_controller_layout()[3]["key"]):
+        elif self.input.key(self.controller_layout["y"]["key"]):
             if self.status.roms_ready.is_set():
                 self.status.roms_ready.clear()
                 threading.Thread(target=self.api.fetch_roms).start()
                 self.status.multi_selected_roms = []
-        elif self.input.key(get_controller_layout()[2]["key"]):
+        elif self.input.key(self.controller_layout["x"]["key"]):
             self.status.current_filter = next(self.status.filters)
             self.roms_selected_position = 0
-        elif self.input.key(get_controller_layout()[5]["key"]):
+        elif self.input.key(self.controller_layout["r1"]["key"]):
             if len(self.status.multi_selected_roms) == len(self.status.roms_to_show):
                 self.status.multi_selected_roms = []
             else:
                 self.status.multi_selected_roms = self.status.roms_to_show.copy()
-        elif self.input.key(get_controller_layout()[4]["key"]):
+        elif self.input.key(self.controller_layout["l1"]["key"]):
             if (
                 self.status.download_rom_ready.is_set()
                 and len(self.status.roms_to_show) > 0
@@ -652,13 +653,13 @@ class RomM:
             )
 
     def _update_contextual_menu(self):
-        if self.input.key(get_controller_layout()[0]["key"]):
+        if self.input.key(self.controller_layout["a"]["key"]):
             if len(self.contextual_menu_options) > 0:
                 self.contextual_menu_options[self.contextual_menu_selected_position][
                     2
                 ]()
                 self.status.show_contextual_menu = False
-        elif self.input.key(get_controller_layout()[1]["key"]):
+        elif self.input.key(self.controller_layout["b"]["key"]):
             self.status.show_contextual_menu = False
             self.contextual_menu_options = []
         else:
@@ -727,7 +728,7 @@ class RomM:
         )
 
     def _update_start_menu(self):
-        if self.input.key(get_controller_layout()[0]["key"]):
+        if self.input.key(self.controller_layout["a"]["key"]):
             selected_pos = self.start_menu_selected_position
             if selected_pos == self.start_menu_options[0][1]:
                 self.status.abort_download.set()
@@ -741,7 +742,7 @@ class RomM:
                 new_layout = layouts[(current_idx + 1) % len(layouts)]
                 set_controller_layout(new_layout)
                 self.ui.layout_name = new_layout
-                self.ui.current_layout = get_controller_layout()
+                self.controller_layout = get_controller_layout()
                 save_controller_layout()
                 self.status.show_start_menu = False
                 self.ui.draw_clear()
@@ -757,7 +758,7 @@ class RomM:
             elif selected_pos == self.start_menu_options[3][1]:
                 self.running = False
                 self.status.show_start_menu = False
-        elif self.input.key(get_controller_layout()[1]["key"]):
+        elif self.input.key(self.controller_layout["b"]["key"]):
             self.status.show_start_menu = not self.status.show_start_menu
         else:
             n_selectable_options = 4 if self.fs._sd2_roms_storage_path else 3
@@ -805,37 +806,37 @@ class RomM:
             self.ui.draw_header(self.api.host, self.api.username)
 
         if not self.status.valid_host:
-            if self.input.key(get_controller_layout()[3]["key"]):
+            if self.input.key(self.controller_layout["y"]["key"]):
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
             self.ui.button_circle(
                 (20, 460),
-                get_controller_layout()[3]["btn"],
+                self.controller_layout["y"]["btn"],
                 "Refresh",
-                color=get_controller_layout()[3]["color"],
+                color=self.controller_layout["y"]["color"],
             )
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 f"Error: Can't connect to host\n{self.api.host}",
-                color=get_controller_layout()[0]["color"],
+                color=self.controller_layout["a"]["color"],
                 anchor="mm",
             )
         elif not self.status.valid_credentials:
-            if self.input.key(get_controller_layout()[3]["key"]):
+            if self.input.key(self.controller_layout["y"]["key"]):
                 if self.status.platforms_ready.is_set():
                     self.status.platforms_ready.clear()
                     threading.Thread(target=self.api.fetch_platforms).start()
             self.ui.button_circle(
                 (20, 460),
-                get_controller_layout()[3]["btn"],
+                self.controller_layout["y"]["btn"],
                 "Refresh",
-                color=get_controller_layout()[3]["color"],
+                color=self.controller_layout["y"]["color"],
             )
             self.ui.draw_text(
                 (self.ui.screen_width / 2, self.ui.screen_height / 2),
                 "Error: Permission denied",
-                color=get_controller_layout()[0]["color"],
+                color=self.controller_layout["a"]["color"],
                 anchor="mm",
             )
         else:

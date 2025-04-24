@@ -1,5 +1,6 @@
 import os
 import re
+from typing import TypedDict
 
 color_btn_a = "#ad3c6b"
 color_btn_b = "#bb7200"
@@ -7,31 +8,55 @@ color_btn_x = "#3b80aa"
 color_btn_y = "#41aa3b"
 color_btn_shoulder = "#383838"
 
+
+class Button(TypedDict):
+    key: str
+    btn: str
+    color: str
+
+
+class ButtonConfig(TypedDict):
+    a: Button
+    b: Button
+    x: Button
+    y: Button
+    l1: Button
+    r1: Button
+
+
+class ButtonConfigs(TypedDict):
+    nintendo: ButtonConfig
+    xbox: ButtonConfig
+
+
 # Default button configurations
-BUTTON_CONFIGS = {
-    "nintendo": [
-        {"key": "A", "btn": "A", "color": color_btn_a},  # East
-        {"key": "B", "btn": "B", "color": color_btn_b},  # South
-        {"key": "X", "btn": "X", "color": color_btn_x},  # North
-        {"key": "Y", "btn": "Y", "color": color_btn_y},  # West
-        {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
-        {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
-    ],
-    "xbox": [
-        {"key": "B", "btn": "A", "color": color_btn_b},  # South
-        {"key": "A", "btn": "B", "color": color_btn_a},  # East
-        {"key": "Y", "btn": "X", "color": color_btn_y},  # West
-        {"key": "X", "btn": "Y", "color": color_btn_x},  # North
-        {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
-        {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
-    ],
+BUTTON_CONFIGS: ButtonConfigs = {
+    "nintendo": {
+        "a": {"key": "A", "btn": "A", "color": color_btn_a},  # East
+        "b": {"key": "B", "btn": "B", "color": color_btn_b},  # South
+        "x": {"key": "X", "btn": "X", "color": color_btn_x},  # North
+        "y": {"key": "Y", "btn": "Y", "color": color_btn_y},  # West
+        "l1": {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
+        "r1": {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
+    },
+    "xbox": {
+        "a": {"key": "A", "btn": "B", "color": color_btn_a},  # East
+        "b": {"key": "B", "btn": "A", "color": color_btn_b},  # South
+        "x": {"key": "X", "btn": "Y", "color": color_btn_x},  # North
+        "y": {"key": "Y", "btn": "X", "color": color_btn_y},  # West
+        "l1": {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
+        "r1": {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
+    },
 }
 
-CONTROLLER_LAYOUT = os.getenv("CONTROLLER_LAYOUT", "nintendo")
+CONTROLLER_LAYOUT = os.getenv("CONTROLLER_LAYOUT", "nintendo").lower()
 
 
-def get_controller_layout():
-    return BUTTON_CONFIGS.get(CONTROLLER_LAYOUT, BUTTON_CONFIGS["nintendo"])
+def get_controller_layout() -> ButtonConfig:
+    """Return the current controller layout configuration."""
+    if CONTROLLER_LAYOUT not in BUTTON_CONFIGS:
+        raise ValueError(f"Invalid controller layout: {CONTROLLER_LAYOUT}")
+    return BUTTON_CONFIGS[CONTROLLER_LAYOUT]  # trunk-ignore(mypy/literal-required)
 
 
 def set_controller_layout(layout: str):
