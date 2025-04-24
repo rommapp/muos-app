@@ -5,6 +5,10 @@ import time
 from typing import Optional
 
 import sdl2
+from config import (
+    color_btn_a,
+    color_btn_b,
+)
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom
@@ -13,13 +17,8 @@ from status import Status
 
 FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
 
-color_btn_a = "#ad3c6b"
-color_btn_b = "#bb7200"
-color_btn_x = "#3b80aa"
-color_btn_y = "#41aa3b"
-color_btn_shoulder = "#383838"
+color_row_bg = "#383838"
 color_menu_bg = "#141414"
-color_sel = "#ad3c6b"
 color_progress_bar = "#3d6b39"
 color_text = "#ffffff"
 
@@ -33,6 +32,7 @@ class UserInterface:
     screen_width = 640
     screen_height = 480
     font_file = FONT_FILE
+    layout_name = os.getenv("CONTROLLER_LAYOUT", "nintendo")
 
     active_image: Image.Image
     active_draw: ImageDraw.ImageDraw
@@ -182,11 +182,13 @@ class UserInterface:
         width: int,
         height: int,
         selected: bool = False,
-        fill: str = color_sel,
+        fill: Optional[str] = None,
         color: str = color_text,
         outline: str | None = None,
         append_icon_path: str | None = None,
     ):
+        if fill is None:
+            fill = color_btn_a if self.layout_name == "nintendo" else color_btn_b
         try:
             icon = Image.open(append_icon_path) if append_icon_path else None
         except (FileNotFoundError, AttributeError):
@@ -198,7 +200,7 @@ class UserInterface:
         self.draw_rectangle_r(
             [position[0], position[1], position[0] + width, position[1] + height],
             radius,
-            fill=fill if selected else color_btn_shoulder,
+            fill=fill if selected else color_row_bg,
             outline=outline,
         )
 
@@ -240,8 +242,10 @@ class UserInterface:
         position: ImageDraw.Coords,
         button: str,
         text: str,
-        color: str = color_sel,
+        color: Optional[str] = None,
     ):
+        if color is None:
+            color = color_btn_a if self.layout_name == "nintendo" else color_btn_b
         radius = 10
         btn_text_offset = 1
         label_margin_l = 20
@@ -384,8 +388,11 @@ class UserInterface:
         platforms_selected_position: int,
         max_n_platforms: int,
         platforms: list[Platform],
-        fill: str = color_sel,
+        fill: Optional[str] = None,
     ):
+        if fill is None:
+            fill = color_btn_a if self.layout_name == "nintendo" else color_btn_b
+
         self.draw_rectangle_r(
             [10, 50, self.screen_width - 10, 100], 5, outline=color_menu_bg
         )
@@ -426,8 +433,11 @@ class UserInterface:
         collections_selected_position: int,
         max_n_collections: int,
         collections: list[Collection],
-        fill: str = color_sel,
+        fill: Optional[str] = None,
     ):
+        if fill is None:
+            fill = color_btn_b if self.layout_name == "nintendo" else color_btn_a
+
         self.draw_rectangle_r(
             [10, 50, self.screen_width - 10, 100], 5, outline=color_menu_bg
         )
@@ -580,5 +590,7 @@ class UserInterface:
             ],
             5,
             fill=color_menu_bg,
-            outline=color_sel,
+            outline=(
+                color_btn_a if UserInterface.layout_name == "nintendo" else color_btn_b
+            ),
         )

@@ -18,7 +18,7 @@ runtimes:
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
-    - checkov@3.2.405
+    - checkov@3.2.408
     - actionlint@1.7.7
     - taplo@0.9.3
     - yamllint@1.37.0
@@ -32,11 +32,11 @@ lint:
     - osv-scanner@2.0.1
     - oxipng@9.1.4
     - prettier@3.5.3
-    - ruff@0.11.5
+    - ruff@0.11.6
     - shellcheck@0.10.0
     - shfmt@3.6.0
     - svgo@3.3.2
-    - trufflehog@3.88.23
+    - trufflehog@3.88.25
   ignore:
     - linters: [oxipng]
       paths:
