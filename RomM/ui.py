@@ -5,17 +5,16 @@ import time
 from typing import Optional
 
 import sdl2
+from config import (
+    color_btn_a,
+    color_btn_b,
+    get_controller_layout,
+)
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
-
-from config import (
-    get_controller_layout,
-    color_btn_a,
-    color_btn_b,
-)
 
 FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
 
@@ -593,5 +592,7 @@ class UserInterface:
             ],
             5,
             fill=color_menu_bg,
-            outline=color_btn_a if UserInterface.layout_name == "nintendo" else color_btn_b,
+            outline=(
+                color_btn_a if UserInterface.layout_name == "nintendo" else color_btn_b
+            ),
         )

@@ -32,8 +32,8 @@ def apply_pending_update() -> bool:
 # Check for update before initializing since it may overwrite our dependencies
 if not apply_pending_update():
     import sdl2
-    from dotenv import load_dotenv
     from config import set_controller_layout
+    from dotenv import load_dotenv
     from romm import RomM
 
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))

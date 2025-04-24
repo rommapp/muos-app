@@ -1,7 +1,7 @@
 import os
 import threading
 import time
-from typing import Any, Tuple, List, Dict
+from typing import Any, Dict, List, Tuple
 
 import sdl2
 import sdl2.ext
@@ -15,8 +15,8 @@ from api import API
 from config import (
     BUTTON_CONFIGS,
     get_controller_layout,
-    set_controller_layout,
     save_controller_layout,
+    set_controller_layout,
 )
 from filesystem import Filesystem
 from glyps import glyphs
@@ -75,7 +75,10 @@ class RomM:
         self.start_menu_options = [
             (StartMenuOptions.ABORT_DOWNLOAD, 0),
             (StartMenuOptions.SD_SWITCH, 1 if self.fs._sd2_roms_storage_path else -1),
-            (StartMenuOptions.TOGGLE_LAYOUT, 2 if self.fs._sd2_roms_storage_path else 1),
+            (
+                StartMenuOptions.TOGGLE_LAYOUT,
+                2 if self.fs._sd2_roms_storage_path else 1,
+            ),
             (StartMenuOptions.EXIT, 3 if self.fs._sd2_roms_storage_path else 2),
         ]
 
@@ -203,7 +206,7 @@ class RomM:
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
                 self.ui.draw_loader(
-                    self.status.extracted_percent, 
+                    self.status.extracted_percent,
                     color=get_controller_layout()[1]["color"],
                 )
                 self.ui.draw_log(
@@ -226,7 +229,7 @@ class RomM:
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", 
+                text_line_1="Error: Permission denied",
                 text_color=get_controller_layout()[0]["color"],
             )
             self.status.valid_credentials = True
@@ -310,7 +313,7 @@ class RomM:
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
                 self.ui.draw_loader(
-                    self.status.extracted_percent, 
+                    self.status.extracted_percent,
                     color=get_controller_layout()[1]["color"],
                 )
                 self.ui.draw_log(
@@ -333,7 +336,7 @@ class RomM:
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", 
+                text_line_1="Error: Permission denied",
                 text_color=get_controller_layout()[0]["color"],
             )
             self.status.valid_credentials = True
@@ -458,7 +461,7 @@ class RomM:
         elif not self.status.download_rom_ready.is_set():
             if self.status.extracting_rom:
                 self.ui.draw_loader(
-                    self.status.extracted_percent, 
+                    self.status.extracted_percent,
                     color=get_controller_layout()[1]["color"],
                 )
                 self.ui.draw_log(
@@ -481,7 +484,7 @@ class RomM:
             self.status.valid_host = True
         elif not self.status.valid_credentials:
             self.ui.draw_log(
-                text_line_1="Error: Permission denied", 
+                text_line_1="Error: Permission denied",
                 text_color=get_controller_layout()[0]["color"],
             )
             self.status.valid_credentials = True
@@ -681,7 +684,7 @@ class RomM:
         next_layout = layouts[(current_idx + 1) % len(layouts)]
         self.start_menu_options[2] = (
             f"{glyphs.user} Toggle layout: {next_layout.capitalize()}",
-            self.start_menu_options[2][1]
+            self.start_menu_options[2][1],
         )
         self.ui.draw_menu_background(
             pos,

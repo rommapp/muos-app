@@ -15,7 +15,7 @@ BUTTON_CONFIGS = {
         {"key": "X", "btn": "X", "color": color_btn_x},  # North
         {"key": "Y", "btn": "Y", "color": color_btn_y},  # West
         {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
-        {"key": "R1", "btn": "R1", "color": color_btn_shoulder}, 
+        {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
     ],
     "xbox": [
         {"key": "B", "btn": "A", "color": color_btn_b},  # South
@@ -23,19 +23,22 @@ BUTTON_CONFIGS = {
         {"key": "Y", "btn": "X", "color": color_btn_y},  # West
         {"key": "X", "btn": "Y", "color": color_btn_x},  # North
         {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
-        {"key": "R1", "btn": "R1", "color": color_btn_shoulder}, 
+        {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
     ],
 }
 
 CONTROLLER_LAYOUT = os.getenv("CONTROLLER_LAYOUT", "nintendo")
 
+
 def get_controller_layout():
     return BUTTON_CONFIGS.get(CONTROLLER_LAYOUT, BUTTON_CONFIGS["nintendo"])
+
 
 def set_controller_layout(layout):
     global CONTROLLER_LAYOUT
     if layout in BUTTON_CONFIGS:
         CONTROLLER_LAYOUT = layout
+
 
 def save_controller_layout(env_path=".env"):
     layout = f"CONTROLLER_LAYOUT={CONTROLLER_LAYOUT}\n"
