@@ -40,10 +40,10 @@ BUTTON_CONFIGS: ButtonConfigs = {
         "r1": {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
     },
     "xbox": {
-        "a": {"key": "A", "btn": "B", "color": color_btn_a},  # East
-        "b": {"key": "B", "btn": "A", "color": color_btn_b},  # South
-        "x": {"key": "X", "btn": "Y", "color": color_btn_x},  # North
-        "y": {"key": "Y", "btn": "X", "color": color_btn_y},  # West
+        "a": {"key": "B", "btn": "A", "color": color_btn_a},  # East
+        "b": {"key": "A", "btn": "B", "color": color_btn_b},  # South
+        "x": {"key": "Y", "btn": "X", "color": color_btn_x},  # North
+        "y": {"key": "X", "btn": "Y", "color": color_btn_y},  # West
         "l1": {"key": "L1", "btn": "L1", "color": color_btn_shoulder},
         "r1": {"key": "R1", "btn": "R1", "color": color_btn_shoulder},
     },
