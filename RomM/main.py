@@ -36,6 +36,10 @@ if not apply_pending_update():
     from dotenv import load_dotenv
     from romm import RomM
 
+    # Throw an error if the .env file is not found
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), ".env")):
+        raise FileNotFoundError("The .env file is missing!")
+
     load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
     set_controller_layout(os.getenv("CONTROLLER_LAYOUT", "nintendo"))
 
