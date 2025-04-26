@@ -18,6 +18,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Set version
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
@@ -29,9 +32,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: GuillaumeFalourd/setup-rsync@v1.2
+
       - name: Run justfile
-        run: |
-          just release
+        run: just release
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2

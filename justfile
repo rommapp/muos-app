@@ -1,15 +1,8 @@
 set dotenv-load
 
-alias c := clean
-alias b := build
-alias z := zip
-alias p := package
-alias u := upload
-
-default: clean copy build upload
+default: clean copy build-dev upload
 update: copy upload-update
-muxapp: clean copy build zip upload-app
-release: clean copy build zip package
+release: clean copy build-prod muxapp portmaster
 
 clean:
 	@echo "Cleaning..."
@@ -36,29 +29,47 @@ copy:
 	sed "s/<version>/{{ version }}/" .build/RomM/__version__.py > .build/RomM/__version__.py.new
 	mv .build/RomM/__version__.py.new .build/RomM/__version__.py
 
-build:
+build-dev:
 	@echo "Building..."
 
 	uv pip freeze > .build/requirements.txt
 	pip install --no-cache-dir --platform manylinux_2_28_aarch64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
 	rm .build/requirements.txt
 
-	# Move pillow libs to the right place
 	mv .build/RomM/deps/pillow.libs .build/RomM/libs
+	just cleanup
 
+build-prod:
+	@echo "Building..."
+
+	uv venv
+	. .venv/bin/activate
+	uv python install
+	uv sync --all-extras --dev
+	uv pip freeze > .build/requirements.txt
+
+	cat .build/requirements.txt
+	pip install --no-cache-dir --platform manylinux_2_28_x86_64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
+	rm .build/requirements.txt
+
+	mv .build/RomM/deps/pillow.libs .build/RomM/libs
+	just cleanup
+
+cleanup:
 	# Remove unnecessary files
+	@echo "Cleaning up..."
 	find .build/RomM/deps -name "*.dist-info" -type d -exec rm -rf {} \; 2>/dev/null || true
 	find .build/RomM/deps -name "*__pycache__" -type d -exec rm -rf {} \; 2>/dev/null || true
 	rm -r .build/RomM/deps/pip
 	rm -r .build/RomM/deps/sdl2/examples 
 	rm -r .build/RomM/deps/sdl2/test
 
-zip:
+muxapp:
 	mkdir -p .dist
 	zip -r "{{ base_name }} {{ version }}.muxapp" ./.build/*
 	mv "{{ base_name }} {{ version }}.muxapp" .dist/"{{ base_name }} {{ version }}.muxapp"
 
-package:
+portmaster:
 	mkdir -p .dist
 	cp "RomM App.sh" ./.build
 	zip -r "RomM PortMaster {{ version }}.zip" ./.build/*
