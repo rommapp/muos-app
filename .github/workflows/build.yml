@@ -31,12 +31,13 @@ jobs:
 
       - name: Run justfile
         run: |
-          just clean
-          just build
+          just release
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: .dist/RomM\ Installer\ ${{ env.version }}.muxapp
+          files: |
+            .dist/RomM\ Installer\ ${{ env.version }}.muxapp
+            .dist/RomM\ PortMaster\ ${{ env.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

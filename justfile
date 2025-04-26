@@ -3,11 +3,13 @@ set dotenv-load
 alias c := clean
 alias b := build
 alias z := zip
-alias p := upload
+alias p := package
+alias u := upload
 
 default: clean copy build upload
 update: copy upload-update
 muxapp: clean copy build zip upload-app
+release: clean copy build zip package
 
 clean:
 	@echo "Cleaning..."
@@ -25,7 +27,7 @@ version := `
 `
 
 copy:
-	@echo "Building..."
+	@echo "Copying files..."
 
 	mkdir -p .build
 	rsync -a --exclude={__pycache__,.venv,.env,.DS_Store,.build,.dist} RomM/ .build/RomM/
@@ -35,7 +37,7 @@ copy:
 	mv .build/RomM/__version__.py.new .build/RomM/__version__.py
 
 build:
-	@echo "Copying Python dependencies..."
+	@echo "Building..."
 
 	uv pip freeze > .build/requirements.txt
 	pip install --no-cache-dir --platform manylinux_2_28_aarch64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
@@ -55,6 +57,12 @@ zip:
 	mkdir -p .dist
 	zip -r "{{ base_name }} {{ version }}.muxapp" ./.build/*
 	mv "{{ base_name }} {{ version }}.muxapp" .dist/"{{ base_name }} {{ version }}.muxapp"
+
+package:
+	mkdir -p .dist
+	cp "RomM App.sh" ./.build
+	zip -r "RomM PortMaster {{ version }}.zip" ./.build/*
+	mv "RomM PortMaster {{ version }}.zip" .dist/"RomM PortMaster {{ version }}.zip"
 
 connect:
 	@echo "Uploading files..."
