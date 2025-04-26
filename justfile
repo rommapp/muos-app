@@ -9,7 +9,6 @@ clean:
 	rm -rf .build
 	rm -rf .dist
 
-base_name := "RomM Installer"
 version := `
 	bash -c 'VERSION=$(grep -o "\"[^\"]*\"" RomM/__version__.py | tr -d "\"")
 	if [[ ${VERSION} == "<version>" ]]; then
@@ -66,13 +65,13 @@ cleanup:
 
 muxapp:
 	mkdir -p .dist
-	zip -r "{{ base_name }} {{ version }}.muxapp" ./.build/*
-	mv "{{ base_name }} {{ version }}.muxapp" .dist/"{{ base_name }} {{ version }}.muxapp"
+	cd .build && zip -r "../RomM muOS {{ version }}.muxapp" ./RomM
+	mv "RomM muOS {{ version }}.muxapp" .dist/"RomM muOS {{ version }}.muxapp"
 
 portmaster:
 	mkdir -p .dist
 	cp "RomM App.sh" ./.build
-	zip -r "RomM PortMaster {{ version }}.zip" ./.build/*
+	cd .build && zip -r "../RomM PortMaster {{ version }}.zip" .
 	mv "RomM PortMaster {{ version }}.zip" .dist/"RomM PortMaster {{ version }}.zip"
 
 connect:
@@ -95,8 +94,8 @@ upload:
 
 upload-app:
     just connect
-    if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group -e "ssh -i \"$PRIVATE_KEY_PATH\"" .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
-    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group -e ssh  .dist/"{{ base_name }} {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
+    if [[ -n $PRIVATE_KEY_PATH ]]; then rsync -avz --no-owner --no-group -e "ssh -i \"$PRIVATE_KEY_PATH\"" .dist/"RomM muOS {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
+    if [[ -n $SSH_PASSWORD ]]; then sshpass -p "$SSH_PASSWORD" rsync -avz --no-owner --no-group -e ssh  .dist/"RomM muOS {{ version }}.muxapp" root@"${DEVICE_IP_ADDRESS}":/mnt/mmc/ARCHIVE/; echo "Upload successful"; exit 0; fi
 
 upload-update:
     just connect
