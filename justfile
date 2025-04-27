@@ -1,6 +1,6 @@
 set dotenv-load
 
-default: clean copy build-dev upload
+default: clean copy build-prod upload
 update: copy upload-update
 release: clean copy build-prod muxapp portmaster
 
@@ -47,8 +47,7 @@ build-prod:
 	uv sync --all-extras --dev
 	uv pip freeze > .build/requirements.txt
 
-	cat .build/requirements.txt
-	pip install --no-cache-dir --platform manylinux_2_28_x86_64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
+	pip install --no-cache-dir --platform manylinux_2_28_aarch64 --only-binary=:all: --implementation cp -r .build/requirements.txt --upgrade --target=.build/RomM/deps
 	rm .build/requirements.txt
 
 	mv .build/RomM/deps/pillow.libs .build/RomM/libs
