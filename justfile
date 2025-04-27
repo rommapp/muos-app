@@ -1,6 +1,6 @@
 set dotenv-load
 
-default: clean copy build-prod upload
+default: clean copy build-dev upload
 update: copy upload-update
 release: clean copy build-prod muxapp portmaster
 
