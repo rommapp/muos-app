@@ -49,7 +49,7 @@ class RomM:
         self.input = Input()
         self.status = Status()
         self.ui = UserInterface()
-        self.updater = Update()
+        self.updater = Update(self.ui)
 
         self.contextual_menu_options: list[Tuple[str, int, Any]] = []
         self.start_menu_selected_position = 0
