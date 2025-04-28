@@ -8,14 +8,13 @@ from filesystem import Filesystem
 from glyps import glyphs
 from semver import Version
 from status import Status
-from ui import UserInterface
 
 
 class Update:
     github_repo = "rommapp/muos-app"
 
-    def __init__(self):
-        self.ui = UserInterface()
+    def __init__(self, ui):
+        self.ui = ui
         self.status = Status()
         self.filesystem = Filesystem()
         self.current_version = self.get_current_version()

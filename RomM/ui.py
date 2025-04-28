@@ -25,6 +25,7 @@ color_text = "#ffffff"
 
 class UserInterface:
     _instance: Optional["UserInterface"] = None
+    _initialized: bool = False
 
     fs = Filesystem()
     status = Status()
@@ -38,10 +39,13 @@ class UserInterface:
     active_draw: ImageDraw.ImageDraw
 
     def __init__(self):
+        if self._initialized:
+            return
         self.window = self._create_window()
         self.renderer = self._create_renderer()
         self.draw_start()
         self.opt_stretch = True
+        self._initialized = True
 
     def __new__(cls):
         if not cls._instance:
