@@ -32,8 +32,8 @@ export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
 
 # Run the app
-pm_platform_helper "python" >dev/null
-python main.py >"${LOG_FILE}" 2>&1
+pm_platform_helper "python3" >dev/null
+python3 main.py >"${LOG_FILE}" 2>&1
 
 # Cleanup
 pm_finish
