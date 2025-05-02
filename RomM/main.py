@@ -8,7 +8,7 @@ libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
 
 
-def apply_pending_update() -> bool:
+def apply_pending_update():
     # The archive contains a RomM folder with the contents inside
     # We want to extract to the folder above the current one so it overwrites our application correctly
     update_path = os.path.abspath(os.path.join(base_path, ".."))
