@@ -398,7 +398,7 @@ class API:
 
         try:
             request = Request(
-                f"{self.host}/{self._roms_endpoint}?{view}_id={id}&order_by=name&order_dir=asc&limit=1000",
+                f"{self.host}/{self._roms_endpoint}?{view}_id={id}&order_by=name&order_dir=asc&limit=10000",
                 headers=self.headers,
             )
         except ValueError:
