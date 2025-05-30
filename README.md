@@ -20,7 +20,7 @@
 
 An app for CFWs that connects to your RomM instance and allows you to fetch games wirelessly from your handheld device.
 
-## Screenshots
+## Preview
 
 <div>
   <img src=".github/resources/platforms.png" height="300px" width="auto" alt="muos app platforms list">
