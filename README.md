@@ -35,13 +35,21 @@ To install and configure the RomM muOS app, check out the [Installation Guide][d
 
 To contribute to RomM muOS app, please check [Contribution Guide](./CONTRIBUTING.md)
 
-# Support
-
-If you have any issues with the app, please [open an issue](https://github.com/rommapp/muos-app/issues/new) in this repository. If the issue is with RomM itself, open an issue in the [RomM repository](https://github.com/rommapp/romm/issues/new/choose).
+# Community
 
 Join us on Discord, where you can ask questions, submit ideas, get help, showcase your collection, and discuss RomM with other users. You can also find our team is the [muOS Discord](https://discord.com/invite/muos).
 
 [![discord-invite]][discord-invite-url]
+
+# Technical Support
+
+If you have any issues with the app, please [open an issue](https://github.com/rommapp/muos-app/issues/new) in this repository. If the issue is with RomM itself, open an issue in the [RomM repository](https://github.com/rommapp/romm/issues/new/choose).
+
+# Project Support
+
+Consider supporting the development of this project on Open Collective.
+
+[![oc-donate-img]][oc-donate]
 
 <!-- Badges -->
 
@@ -57,3 +65,5 @@ Join us on Discord, where you can ask questions, submit ideas, get help, showcas
 [docs-installation-guide]: https://docs.romm.app/latest/Integrations/muOS-app/
 [discord-invite]: https://invidget.switchblade.xyz/P5HtHnhUDH
 [discord-invite-url]: https://discord.gg/P5HtHnhUDH
+[oc-donate-img]: https://opencollective.com/romm/donate/button.png?color=blue
+[oc-donate]: https://opencollective.com/romm
