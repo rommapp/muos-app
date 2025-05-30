@@ -27,15 +27,15 @@ An app for CFWs that connects to your RomM instance and allows you to fetch game
   <img src=".github/resources/gamelist.png" height="300px" width="auto" alt="muos app game list">
 </div>
 
-## Installation
+# Installation
 
 To install and configure the RomM muOS app, check out the [Installation Guide][docs-installation-guide]
 
-## Contributing
+# Contributing
 
 To contribute to RomM muOS app, please check [Contribution Guide](./CONTRIBUTING.md)
 
-## Support
+# Support
 
 > [!NOTE]
 > Your device must connect to your RomM instance or home server over Wi-Fi. The easiest method is to keep them on the same network and set HOST to the server's IP and the port where RomM is running. Advanced users or those using reverse proxies can configure their network and DNS settings as needed, using a URL with a domain like `https://romm.domain.com`.
