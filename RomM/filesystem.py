@@ -8,8 +8,11 @@ from models import Rom
 class Filesystem:
     _instance: Optional["Filesystem"] = None
 
-    # Check if the app is running on muOS
+    # Check if app is running on muOS
     is_muos = os.path.exists("/mnt/mmc/MUOS")
+
+    # Check is app is running on SpruceOS
+    is_spruceos = os.path.exists("mnt/SDCARD/spruce")
 
     # Storage paths for ROMs
     _sd1_roms_storage_path: str
@@ -32,6 +35,9 @@ class Filesystem:
         if self.is_muos:
             self._sd1_roms_storage_path = "/mnt/mmc/ROMS"
             self._sd2_roms_storage_path = "/mnt/sdcard/ROMS"
+        elif self.is_spruceos:
+            self._sd1_roms_storage_path = "mnt/SDCARD/Roms"
+            self._sd2_roms_storage_path = None
         else:
             # Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)
             base_path = os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
@@ -65,11 +71,15 @@ class Filesystem:
         return self._sd2_roms_storage_path
 
     def _get_platform_storage_dir_from_mapping(self, platform: str) -> str:
-        """Return the platform-specific storage path, using MUOS mapping if on muOS,
-        or using ES mapping if available."""
+        """
+        Return the platform-specific storage path,
+        using MUOS mapping if on muOS,
+        or SpruceOS mapping if on SpruceOS,
+        or using ES mapping if available.
+        """
 
         # First check if the platform has an entry in the ES map
-        platform_dir = platform_maps._ES_FOLDER_MAP.get(platform, platform)
+        platform_dir = platform_maps.ES_FOLDER_MAP.get(platform, platform)
 
         # If the ES map returns a tuple, use the first element of the tuple
         if isinstance(platform_dir, tuple):
@@ -78,6 +88,11 @@ class Filesystem:
         # If running on muOS, override the platform_dir with the MUOS mapping
         if self.is_muos:
             platform_dir = platform_maps.MUOS_SUPPORTED_PLATFORMS_FS_MAP.get(
+                platform, platform_dir
+            )
+
+        if self.is_spruceos:
+            platform_dir = platform_maps.SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.get(
                 platform, platform_dir
             )
 

@@ -3,7 +3,7 @@
 # https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/unix/es_systems.xml
 
 # EmulationStation custom folder map
-_ES_FOLDER_MAP = {
+ES_FOLDER_MAP = {
     # "slug": ("es-system", "icon"),
     "ngc": ("gamecube", "ngc"),  # Nintendo GameCube
     "n3ds": ("3ds", "3ds"),  # Nintendo 3DS
@@ -13,7 +13,6 @@ _ES_FOLDER_MAP = {
 }
 
 # Manual mapping of RomM slugs for MuOS default platforms
-
 MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "acpc": "Amstrad",
     "arcade": "Arcade",
@@ -111,3 +110,86 @@ MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
 
 MUOS_SUPPORTED_PLATFORMS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
 MUOS_SUPPORTED_PLATFORMS_FS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.values())
+
+SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP = {
+    "amiga": "AMIGA",
+    "amstrad_cpc": "CPC",
+    "arcade": "ARCADE",
+    "arduboy": "ARDUBOY",
+    "atari2600": "ATARI",
+    "atari8bit": "EIGHTHUNDRED",
+    "atari5200": "FIFTYTWOHUNDRED",
+    "atari7800": "SEVENTYEIGHTHUNDRED",
+    "lynx": "LYNX",
+    "sufami": "SUFAMI",
+    "wonderswan": "WS",
+    "wonderswan_color": "WSC",
+    "cps1": "CPS1",
+    "cps2": "CPS2",
+    "cps3": "CPS3",
+    "colecovision": "COLECO",
+    "c64": "COMMODORE",
+    "vic20": "VIC20",
+    "doom": "DOOM",
+    "channel_f": "FAIRCHILD",
+    "fds": "FDS",
+    "media": "MEDIA",
+    "gw": "GW",
+    "vectrex": "VECTREX",
+    "odyssey2": "ODYSSEY",
+    "mame2003plus": "MAME2003PLUS",
+    "intellivision": "INTELLIVISION",
+    "megaduck": "MEGADUCK",
+    "dos": "DOS",
+    "msx": "MSX",
+    "msx2": "MSX",  # same folder for both MSX and MSX2
+    "supergrafx": "SGFX",
+    "pcecd": "PCECD",
+    "tg16": "PCE",
+    "pce": "PCE",
+    "n64": "N64",
+    "nds": "NDS",
+    "nes": "FC",
+    "gba": "GBA",
+    "gbc": "GBC",
+    "gb": "GB",
+    "pokemon_mini": "POKE",
+    "satellaview": "SATELLAVIEW",
+    "sgb": "SGB",
+    "snes": "SFC",
+    "vb": "VB",
+    "openbor": "OPENBOR",
+    "pico8_fake08": "FAKE08",
+    "pico8": "PICO8",
+    "psp": "PSP",
+    "quake": "QUAKE",
+    "ports": "PORTS",
+    "scummvm": "SCUMMVM",
+    "sega32x": "THIRTYTWOX",
+    "segacd": "SEGACD",
+    "dreamcast": "DC",
+    "gamegear": "GG",
+    "msumd": "MSUMD",
+    "genesis": "MD",
+    "megadrive": "MD",  # alias for Genesis
+    "mastersystem": "MS",
+    "sg1000": "SEGASGONE",
+    "x68000": "X68000",
+    "zxspectrum": "ZXS",
+    "msu1": "MSU1",
+    "neogeocd": "NEOCD",
+    "ngp": "NGP",
+    "ngpc": "NGPC",
+    "neogeo": "NEOGEO",
+    "psx": "PS",
+    "tic80": "TIC",
+    "videopac": "VIDEOPAC",
+    "supervision": "SUPERVISION",
+    "wolf3d": "WOLF",
+}
+
+# Manual mapping of RomM slugs for SpruceOS default platforms
+SPRUCEOS_SUPPORTED_PLATFORMS = frozenset(SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
+SPRUCEOS_SUPPORTED_PLATFORMS_FS = frozenset(
+    SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.values()
+)

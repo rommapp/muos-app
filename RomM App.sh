@@ -34,50 +34,54 @@ export LD_LIBRARY_PATH="${GAMEDIR}/libs:${LD_LIBRARY_PATH}"
 export SDL_GAMECONTROLLERCONFIG="${sdl_controllerconfig}"
 
 use_runtime() {
-    if [ ! -f "$controlfolder/libs/${runtime}.squashfs" ]; then
-        if [ ! -f "$controlfolder/harbourmaster" ]; then
-            pm_message "This port requires the latest PortMaster to run, please go to https://portmaster.games/"
-            sleep 5
-            exit 1
-        fi
-        $ESUDO "$controlfolder/harbourmaster" --quiet --no-check runtime_check "${runtime}.squashfs"
-    fi
+	if [ ! -f "$controlfolder/libs/${runtime}.squashfs" ]; then
+		if [ ! -f "$controlfolder/harbourmaster" ]; then
+			pm_message "This port requires the latest PortMaster to run, please go to https://portmaster.games/"
+			sleep 5
+			exit 1
+		fi
+		$ESUDO "$controlfolder/harbourmaster" --quiet --no-check runtime_check "${runtime}.squashfs"
+	fi
 
-    $ESUDO mkdir -p "${python_dir}"
-    $ESUDO umount "$controlfolder/libs/${runtime}.squashfs" 2>/dev/null || true
-    $ESUDO mount "$controlfolder/libs/${runtime}.squashfs" "${python_dir}"
+	$ESUDO mkdir -p "${python_dir}"
+	$ESUDO umount "$controlfolder/libs/${runtime}.squashfs" 2>/dev/null || true
+	$ESUDO mount "$controlfolder/libs/${runtime}.squashfs" "${python_dir}"
 
-    export PYTHONHOME="${python_dir}"
-    export PATH="${python_dir}/bin:$PATH"
-    export LD_LIBRARY_PATH="${python_dir}/libs:${LD_LIBRARY_PATH}"
-    python="${python_dir}/bin/python3"
+	export PYTHONHOME="${python_dir}"
+	export PATH="${python_dir}/bin:$PATH"
+	export LD_LIBRARY_PATH="${python_dir}/libs:${LD_LIBRARY_PATH}"
+	python="${python_dir}/bin/python3"
+
+	$python -m pip install -U pysdl2
+	$python -m pip install -U dotenv
+	$python -m pip install -U semver
 }
 
 # Default to system python3
 python=$(which python3)
 
 if [ -x "$python" ]; then
-    PYTHON_VERSION=$($python -c 'import sys; print("{}.{}".format(sys.version_info[0], sys.version_info[1]))')
+	PYTHON_VERSION=$($python -c 'import sys; print("{}.{}".format(sys.version_info[0], sys.version_info[1]))')
 else
-    PYTHON_VERSION="0.0"
+	PYTHON_VERSION="0.0"
 fi
 
 REQUIRED_VERSION="3.10"
 
 version_ge() {
-    # returns 0 if $1 >= $2
-    v1="$1"
-    v2="$2"
-    [ "$(printf '%s\n' "$v2" "$v1" | sort -V | head -n1)" = "$v2" ]
+	# returns 0 if $1 >= $2
+	v1="$1"
+	v2="$2"
+	[ "$(printf '%s\n' "$v2" "$v1" | sort -V | head -n1)" = "$v2" ]
 }
 
 if ! version_ge "$PYTHON_VERSION" "$REQUIRED_VERSION"; then
-    use_runtime
+	use_runtime
 fi
 
 # Run the app
 pm_platform_helper "$python" >/dev/null
-$python main.py > "${LOG_FILE}" 2>&1
+$python main.py >"${LOG_FILE}" 2>&1
 
 # Cleanup
 pm_finish
