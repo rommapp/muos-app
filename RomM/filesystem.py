@@ -12,7 +12,7 @@ class Filesystem:
     is_muos = os.path.exists("/mnt/mmc/MUOS")
 
     # Check is app is running on SpruceOS
-    is_spruceos = os.path.exists("mnt/SDCARD/spruce")
+    is_spruceos = os.path.exists("/mnt/SDCARD/spruce")
 
     # Storage paths for ROMs
     _sd1_roms_storage_path: str
@@ -36,7 +36,7 @@ class Filesystem:
             self._sd1_roms_storage_path = "/mnt/mmc/ROMS"
             self._sd2_roms_storage_path = "/mnt/sdcard/ROMS"
         elif self.is_spruceos:
-            self._sd1_roms_storage_path = "mnt/SDCARD/Roms"
+            self._sd1_roms_storage_path = "/mnt/SDCARD/Roms"
             self._sd2_roms_storage_path = None
         else:
             # Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)
