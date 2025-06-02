@@ -492,7 +492,7 @@ class API:
         self, valid_host: bool = False, valid_credentials: bool = False
     ) -> None:
         self.status.total_downloaded_bytes = 0
-        self.status.downloaded_percent = 0
+        self.status.downloaded_percent = 0.0
         self.status.valid_host = valid_host
         self.status.valid_credentials = valid_credentials
         self.status.downloading_rom = None

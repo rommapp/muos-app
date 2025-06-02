@@ -329,7 +329,7 @@ class UserInterface:
                 color=text_color,
             )
 
-    def draw_loader(self, percent: int, color: str = color_progress_bar):
+    def draw_loader(self, percent: float, color: str = color_progress_bar):
         margin = 10
         margin_top = 38
         margin_bottom = 4

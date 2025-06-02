@@ -205,7 +205,7 @@ class RomM:
                 text_line_1=f"{self.current_spinner_status} Fetching platforms"
             )
         elif not self.status.download_rom_ready.is_set():
-            if self.status.extracting_rom:
+            if self.status.extracting_rom and self.status.downloading_rom:
                 self.ui.draw_loader(
                     self.status.extracted_percent,
                     color=self.controller_layout["b"]["color"],
@@ -312,7 +312,7 @@ class RomM:
                 text_line_1=f"{self.current_spinner_status} Fetching collections"
             )
         elif not self.status.download_rom_ready.is_set():
-            if self.status.extracting_rom:
+            if self.status.extracting_rom and self.status.downloading_rom:
                 self.ui.draw_loader(
                     self.status.extracted_percent,
                     color=self.controller_layout["b"]["color"],
@@ -460,7 +460,7 @@ class RomM:
                 self.current_spinner_status = next(glyphs.spinner)
             self.ui.draw_log(text_line_1=f"{self.current_spinner_status} Fetching roms")
         elif not self.status.download_rom_ready.is_set():
-            if self.status.extracting_rom:
+            if self.status.extracting_rom and self.status.downloading_rom:
                 self.ui.draw_loader(
                     self.status.extracted_percent,
                     color=self.controller_layout["b"]["color"],
