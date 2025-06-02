@@ -149,7 +149,7 @@ class API:
 
     def _fetch_platform_icon(self, platform_slug) -> None:
         try:
-            mapped_slug, icon_filename = platform_maps._ES_FOLDER_MAP.get(
+            mapped_slug, icon_filename = platform_maps.ES_FOLDER_MAP.get(
                 platform_slug.lower(), (platform_slug, platform_slug)
             )
             icon_url = f"{self.host}/{self._platform_icon_url}/{icon_filename}.ico"
@@ -237,9 +237,9 @@ class API:
         platforms = json.loads(response.read().decode("utf-8"))
         _platforms: list[Platform] = []
 
-        # Get the list of subfolders in the ROMs directory for non-muOS filtering
+        # Get the list of subfolders in the ROMs directory for PM filtering
         roms_subfolders = set()
-        if not self.file_system.is_muos:
+        if not self.file_system.is_muos and not self.file_system.is_spruceos:
             roms_path = self.file_system.get_roms_storage_path()
             print(f"ROMs path: {roms_path}")
             if os.path.exists(roms_path):
@@ -258,9 +258,15 @@ class API:
                         or platform_slug in self._exclude_platforms
                     ):
                         continue
+                elif self.file_system.is_spruceos:
+                    if (
+                        platform_slug not in platform_maps.SPRUCEOS_SUPPORTED_PLATFORMS
+                        or platform_slug in self._exclude_platforms
+                    ):
+                        continue
                 else:
                     # Map the slug to the folder name for non-muOS
-                    mapped_folder, icon_file = platform_maps._ES_FOLDER_MAP.get(
+                    mapped_folder, icon_file = platform_maps.ES_FOLDER_MAP.get(
                         platform_slug.lower(), (platform_slug, platform_slug)
                     )
                     if (
@@ -434,7 +440,7 @@ class API:
 
         # Get the list of subfolders in the ROMs directory for non-muOS filtering
         roms_subfolders = set()
-        if not self.file_system.is_muos:
+        if not self.file_system.is_muos and not self.file_system.is_spruceos:
             roms_path = self.file_system.get_roms_storage_path()
             if os.path.exists(roms_path):
                 roms_subfolders = {
@@ -449,8 +455,11 @@ class API:
             if self.file_system.is_muos:
                 if platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS:
                     continue
+            elif self.file_system.is_spruceos:
+                if platform_slug not in platform_maps.SPRUCEOS_SUPPORTED_PLATFORMS:
+                    continue
             else:
-                mapped_folder, icon_file = platform_maps._ES_FOLDER_MAP.get(
+                mapped_folder, icon_file = platform_maps.ES_FOLDER_MAP.get(
                     platform_slug.lower(), (platform_slug, platform_slug)
                 )
                 if mapped_folder.lower() not in roms_subfolders:

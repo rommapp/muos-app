@@ -3,7 +3,7 @@
 # https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/unix/es_systems.xml
 
 # EmulationStation custom folder map
-_ES_FOLDER_MAP = {
+ES_FOLDER_MAP = {
     # "slug": ("es-system", "icon"),
     "ngc": ("gamecube", "ngc"),  # Nintendo GameCube
     "n3ds": ("3ds", "3ds"),  # Nintendo 3DS
@@ -13,7 +13,6 @@ _ES_FOLDER_MAP = {
 }
 
 # Manual mapping of RomM slugs for MuOS default platforms
-
 MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "acpc": "Amstrad",
     "arcade": "Arcade",
@@ -82,7 +81,7 @@ MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "neo-geo-pocket": "SNK Neo Geo Pocket - Color",
     "neo-geo-pocket-color": "SNK Neo Geo Pocket - Color",
     "scummvm": "ScummVM",
-    "sega-32x": "Sega 32X",
+    "sega32": "Sega 32X",
     "naomi": "Sega Atomiswave Naomi",
     "dc": "Sega Dreamcast",
     "gamegear": "Sega Game Gear",
@@ -111,3 +110,85 @@ MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
 
 MUOS_SUPPORTED_PLATFORMS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
 MUOS_SUPPORTED_PLATFORMS_FS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.values())
+
+SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP = {
+    "amiga": "AMIGA",
+    "acpc": "CPC",
+    "arcade": "ARCADE",
+    "arduboy": "ARDUBOY",
+    "atari2600": "ATARI",
+    "atari8bit": "EIGHTHUNDRED",
+    "atari5200": "FIFTYTWOHUNDRED",
+    "atari7800": "SEVENTYEIGHTHUNDRED",
+    "lynx": "LYNX",
+    "sufami": "SUFAMI",
+    "wonderswan": "WS",
+    "wonderswan-color": "WSC",
+    "cps1": "CPS1",
+    "cps2": "CPS2",
+    "cps3": "CPS3",
+    "colecovision": "COLECO",
+    "c64": "COMMODORE",
+    "vic-20": "VIC20",
+    "doom": "DOOM",
+    "fairchild-channel-f": "FAIRCHILD",
+    "fds": "FDS",
+    "g-and-w": "GW",
+    "vectrex": "VECTREX",
+    "odyssey-2-slash-videopac-g7000": "ODYSSEY",
+    "mame2003plus": "MAME2003PLUS",
+    "intellivision": "INTELLIVISION",
+    "mega-duck-slash-cougar-boy": "MEGADUCK",
+    "dos": "DOS",
+    "msx": "MSX",
+    "msx2": "MSX",  # same folder for both MSX and MSX2
+    "supergrafx": "SGFX",
+    "pcecd": "PCECD",
+    "turbografx16--1": "PCE",
+    "turbografx-16-slash-pc-engine-cd": "PCE",
+    "n64": "N64",
+    "nds": "NDS",
+    "nes": "FC",
+    "gba": "GBA",
+    "gbc": "GBC",
+    "gb": "GB",
+    "pokemon-mini": "POKE",
+    "satellaview": "SATELLAVIEW",
+    "sgb": "SGB",
+    "snes": "SFC",
+    "virtualboy": "VB",
+    "openbor": "OPENBOR",
+    "fake08": "FAKE08",
+    "pico": "PICO8",
+    "psp": "PSP",
+    "quake": "QUAKE",
+    "scummvm": "SCUMMVM",
+    "sega32": "THIRTYTWOX",
+    "segacd": "SEGACD",
+    "dc": "DC",
+    "gamegear": "GG",
+    "msumd": "MSUMD",
+    "genesis-slash-megadrive": "MD",
+    "mastersystem": "MS",
+    "sg1000": "SEGASGONE",
+    "sharp-x68000": "X68000",
+    "zxspectrum": "ZXS",
+    "msu1": "MSU1",
+    "neo-geo-cd": "NEOCD",
+    "ngp": "NGP",
+    "ngpc": "NGPC",
+    "neogeoaes": "NEOGEO",
+    "neogeomvs": "NEOCD",
+    "psx": "PS",
+    "saturn": "SATURN",
+    "tic80": "TIC",
+    "videopac-g7400": "VIDEOPAC",
+    "supervision": "SUPERVISION",
+    "wolf3d": "WOLF",
+}
+
+# Manual mapping of RomM slugs for SpruceOS default platforms
+SPRUCEOS_SUPPORTED_PLATFORMS = frozenset(SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
+SPRUCEOS_SUPPORTED_PLATFORMS_FS = frozenset(
+    SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.values()
+)
