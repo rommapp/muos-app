@@ -15,7 +15,11 @@ from models import Collection, Platform, Rom
 from PIL import Image, ImageDraw, ImageFont
 from status import Status
 
-FONT_FILE = {15: ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12)}
+FONT_FILE = {
+    "sm": ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 12),
+    "md": ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 15),
+    "lg": ImageFont.truetype(os.path.join(os.getcwd(), "fonts/romm.ttf"), 18),
+}
 
 color_row_bg = "#383838"
 color_menu_bg = "#141414"
@@ -153,12 +157,12 @@ class UserInterface:
         self,
         position: tuple[float, float],
         text: str,
-        font: int = 15,
+        size: str = "md",
         color: str = color_text,
         **kwargs,
     ):
         self.active_draw.text(
-            position, text, font=self.font_file[font], fill=color, **kwargs
+            position, text, font=self.font_file[size], fill=color, **kwargs
         )
 
     def draw_rectangle(
@@ -187,6 +191,7 @@ class UserInterface:
         height: int,
         selected: bool = False,
         fill: Optional[str] = None,
+        size: str = "md",
         color: str = color_text,
         outline: str | None = None,
         append_icon_path: str | None = None,
@@ -221,6 +226,7 @@ class UserInterface:
             (position[0] + margin_left_text, position[1] + margin_top_text),
             text,
             color=color,
+            size=size,
         )
 
     def draw_circle(
@@ -263,7 +269,7 @@ class UserInterface:
         self.draw_text(
             (position[0] + label_margin_l, position[1] + btn_text_offset),
             text,
-            font=15,
+            size="sm",
             anchor="lm",
         )
 

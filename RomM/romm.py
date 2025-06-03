@@ -34,7 +34,7 @@ ButtonConfig = Dict[str, str]
 
 class StartMenuOptions:
     ABORT_DOWNLOAD = f"{glyphs.abort} Abort downloads"
-    SD_SWITCH = f"{glyphs.microsd} Switch SD"
+    SD_SWITCH = f"{glyphs.microsd} Switch SD card"
     TOGGLE_LAYOUT = f"{glyphs.user} Toggle button layout"
     EXIT = f"{glyphs.exit} Exit"
 
@@ -87,7 +87,7 @@ class RomM:
         # Button rendering with adjusted spacing
         pos_x = 20  # Starting x position
         radius = 20  # Diameter of button circle
-        char_width = 6  # Pixels per character (font=12, adjust as needed)
+        char_width = 6  # Pixels per character (font=15, adjust as needed)
         padding = 10  # Fixed spacing between buttons
 
         for config in self.buttons_config:
@@ -671,11 +671,11 @@ class RomM:
 
     def _render_start_menu(self):
         pos = [self.ui.screen_width / 3, self.ui.screen_height / 3]
-        padding = 5
+        padding = 6
         width = 200
         n_selectable_options = 4 if self.fs._sd2_roms_storage_path else 3
-        option_height = 24
-        gap = 3
+        option_height = 28
+        gap = 4
         title = "Main menu"
         title_x_adjustment = 35
         version_x_adjustment = 50 / 6 * (len(version) + 2)
@@ -684,7 +684,7 @@ class RomM:
         current_idx = layouts.index(self.ui.layout_name)
         next_layout = layouts[(current_idx + 1) % len(layouts)]
         self.start_menu_options[2] = (
-            f"{glyphs.user} Toggle layout: {next_layout.capitalize()}",
+            f"{glyphs.user} Layout: {next_layout.capitalize()}",
             self.start_menu_options[2][1],
         )
         self.ui.draw_menu_background(
