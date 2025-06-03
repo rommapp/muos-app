@@ -1,6 +1,6 @@
 [project]
 name = "muos-app"
-version = "0.0.1"
+version = "0.5.0"
 description = "A simple muOS app for RomM"
 readme = "README.md"
 requires-python = ">=3.11"
