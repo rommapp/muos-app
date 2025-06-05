@@ -39,7 +39,9 @@ build-dev:
 	just cleanup
 
 build-prod:
-	@echo "Building..."
+	#!/usr/bin/env bash
+	set -euxo pipefail
+	echo "Building..."
 
 	uv venv
 	. .venv/bin/activate
