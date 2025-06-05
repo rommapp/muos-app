@@ -3,7 +3,7 @@ name = "muos-app"
 version = "0.5.0"
 description = "A simple muOS app for RomM"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
   "pillow>=11.1.0",
   "pip>=25.0.1",
