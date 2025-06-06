@@ -609,14 +609,7 @@ class RomM:
                         (
                             f"{glyphs.delete} Remove from device",
                             1,
-                            lambda: os.remove(
-                                os.path.join(
-                                    self.fs.get_platforms_storage_path(
-                                        selected_rom.platform_slug
-                                    ),
-                                    selected_rom.fs_name,
-                                )
-                            ),
+                            lambda: self._remove_rom_files(selected_rom),
                         ),
                     )
             else:
@@ -877,3 +870,22 @@ class RomM:
             self._update_contextual_menu()
 
         self._update_common()
+
+    def _remove_rom_files(self, rom):
+        storage_path = self.fs.get_platforms_storage_path(rom.platform_slug)
+
+        if rom.multi:
+            rom_list_path = os.path.join(storage_path, rom.fs_name + ".m3u")
+            if os.path.isfile(rom_list_path):
+                with open(rom_list_path, "r") as f:
+                    for line in f:
+                        filename = line.strip()
+                        if filename:
+                            full_path = os.path.join(storage_path, filename)
+                            if os.path.isfile(full_path):
+                                os.remove(full_path)
+                os.remove(rom_list_path)
+        else:
+            full_path = os.path.join(storage_path, rom.fs_name)
+            if os.path.isfile(full_path):
+                os.remove(full_path)
