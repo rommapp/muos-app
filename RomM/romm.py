@@ -882,10 +882,10 @@ class RomM:
                         filename = line.strip()
                         if filename:
                             full_path = os.path.join(storage_path, filename)
-                            if os.path.isfile(full_path):
+                            if os.path.commonpath([storage_path, full_path]) == storage_path and os.path.isfile(full_path):
                                 os.remove(full_path)
                 os.remove(rom_list_path)
         else:
             full_path = os.path.join(storage_path, rom.fs_name)
-            if os.path.isfile(full_path):
+            if os.path.commonpath([storage_path, full_path]) == storage_path and os.path.isfile(full_path):
                 os.remove(full_path)
