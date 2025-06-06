@@ -252,7 +252,14 @@ class API:
         for platform in platforms:
             if platform["rom_count"] > 0:
                 platform_slug = platform["slug"].lower()
-                if self.file_system.is_muos:
+                if (
+                    platform_maps._env_maps
+                    and platform_slug in platform_maps._env_platforms
+                    and platform_slug not in self._exclude_platforms
+                ):
+                  # A custom map from the .env was found, no need to check defaults
+                    pass
+                elif self.file_system.is_muos:
                     if (
                         platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS
                         or platform_slug in self._exclude_platforms
@@ -452,7 +459,9 @@ class API:
         _roms = []
         for rom in roms:
             platform_slug = rom["platform_slug"].lower()
-            if self.file_system.is_muos:
+            if platform_maps._env_maps and platform_slug in platform_maps._env_platforms:
+                pass
+            elif self.file_system.is_muos:
                 if platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS:
                     continue
             elif self.file_system.is_spruceos:

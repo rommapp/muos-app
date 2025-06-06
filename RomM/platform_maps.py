@@ -1,3 +1,6 @@
+import os
+import json
+
 # Manual mapping of RomM slugs to device folder names and platform icons for es systems
 # This is sometimes needed to match custom system folders with defaults, for example ES-DE uses roms/gc and some Batocera forks use roms/gamecube
 # https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/unix/es_systems.xml
@@ -192,3 +195,28 @@ SPRUCEOS_SUPPORTED_PLATFORMS = frozenset(SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.key
 SPRUCEOS_SUPPORTED_PLATFORMS_FS = frozenset(
     SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.values()
 )
+
+_env_maps = None
+_env_platforms = None
+
+def _load_env_maps() -> dict[str, str]:
+    raw = os.getenv("CUSTOM_MAPS")
+    if not raw:
+        return {}
+    try:
+        loaded = json.loads(raw)
+        return loaded
+    except json.JSONDecodeError as e:
+        print(f"Error: CUSTOM_MAPS is an invalid JSON format: {e}")
+        return {}
+    except Exception as e:
+        print(f"Error: Unexpected error: {e}")
+        return {}
+
+def init_env_maps():
+    global _env_maps
+    global _env_platforms
+    if _env_maps is None:
+        _env_maps = _load_env_maps()
+    if _env_platforms is None:
+        _env_platforms = frozenset(_env_maps.keys())

@@ -96,6 +96,11 @@ class Filesystem:
                 platform, platform_dir
             )
 
+        if platform_maps._env_maps and platform in platform_maps._env_platforms:
+            platform_dir = platform_maps._env_maps.get(
+                platform, platform_dir
+            )
+
         return platform_dir
 
     def _get_sd1_platforms_storage_path(self, platform: str) -> str:
