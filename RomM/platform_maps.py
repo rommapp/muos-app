@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 # Manual mapping of RomM slugs to device folder names and platform icons for es systems
 # This is sometimes needed to match custom system folders with defaults, for example ES-DE uses roms/gc and some Batocera forks use roms/gamecube
@@ -199,6 +199,7 @@ SPRUCEOS_SUPPORTED_PLATFORMS_FS = frozenset(
 _env_maps = None
 _env_platforms = None
 
+
 def _load_env_maps() -> dict[str, str]:
     raw = os.getenv("CUSTOM_MAPS")
     if not raw:
@@ -212,6 +213,7 @@ def _load_env_maps() -> dict[str, str]:
     except Exception as e:
         print(f"Error: Unexpected error: {e}")
         return {}
+
 
 def init_env_maps():
     global _env_maps

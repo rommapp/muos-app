@@ -1,6 +1,7 @@
 import os
 import sys
 import zipfile
+
 import platform_maps
 
 # Add dependencies to path
@@ -51,6 +52,7 @@ if not apply_pending_update():
 
     # Read any custom maps
     platform_maps.init_env_maps()
+
 
 def cleanup(romm: RomM, exit_code: int):
     romm.ui.cleanup()

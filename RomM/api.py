@@ -257,7 +257,7 @@ class API:
                     and platform_slug in platform_maps._env_platforms
                     and platform_slug not in self._exclude_platforms
                 ):
-                  # A custom map from the .env was found, no need to check defaults
+                    # A custom map from the .env was found, no need to check defaults
                     pass
                 elif self.file_system.is_muos:
                     if (
@@ -459,7 +459,10 @@ class API:
         _roms = []
         for rom in roms:
             platform_slug = rom["platform_slug"].lower()
-            if platform_maps._env_maps and platform_slug in platform_maps._env_platforms:
+            if (
+                platform_maps._env_maps
+                and platform_slug in platform_maps._env_platforms
+            ):
                 pass
             elif self.file_system.is_muos:
                 if platform_slug not in platform_maps.MUOS_SUPPORTED_PLATFORMS:
