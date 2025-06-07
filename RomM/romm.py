@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 import sdl2
 import sdl2.ext
+from models import Rom
 
 if os.path.exists(os.path.join(os.path.dirname(__file__), "__version__.py")):
     from __version__ import version
@@ -871,10 +872,11 @@ class RomM:
 
         self._update_common()
 
-    def _remove_rom_files(self, rom):
+    def _remove_rom_files(self, rom: Rom):
         storage_path = self.fs.get_platforms_storage_path(rom.platform_slug)
 
         if rom.multi:
+            # Read the m3u file to get the list of ROMs under the .hidden folder
             rom_list_path = os.path.join(storage_path, rom.fs_name + ".m3u")
             if os.path.isfile(rom_list_path):
                 with open(rom_list_path, "r") as f:
@@ -882,10 +884,14 @@ class RomM:
                         filename = line.strip()
                         if filename:
                             full_path = os.path.join(storage_path, filename)
-                            if os.path.commonpath([storage_path, full_path]) == storage_path and os.path.isfile(full_path):
+                            if os.path.commonpath(
+                                [storage_path, full_path]
+                            ) == storage_path and os.path.isfile(full_path):
                                 os.remove(full_path)
                 os.remove(rom_list_path)
         else:
             full_path = os.path.join(storage_path, rom.fs_name)
-            if os.path.commonpath([storage_path, full_path]) == storage_path and os.path.isfile(full_path):
+            if os.path.commonpath(
+                [storage_path, full_path]
+            ) == storage_path and os.path.isfile(full_path):
                 os.remove(full_path)
