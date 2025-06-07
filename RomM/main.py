@@ -1,13 +1,19 @@
+# trunk-ignore-all(ruff/E402)
+
 import os
 import sys
 import zipfile
-
-import platform_maps
 
 # Add dependencies to path
 base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
 sys.path.insert(0, libs_path)
+
+import sdl2
+from config import set_controller_layout
+from dotenv import load_dotenv
+from platform_maps import init_env_maps
+from romm import RomM
 
 
 def apply_pending_update():
@@ -33,11 +39,6 @@ def apply_pending_update():
 
 # Check for update before initializing since it may overwrite our dependencies
 if not apply_pending_update():
-    import sdl2
-    from config import set_controller_layout
-    from dotenv import load_dotenv
-    from romm import RomM
-
     # Throw an error if the .env file is not found
     if not os.path.exists(os.path.join(os.path.dirname(__file__), ".env")):
         raise FileNotFoundError("The .env file is missing!")
@@ -51,7 +52,7 @@ if not apply_pending_update():
     sys.stdout = open(log_file, "w", buffering=1)
 
     # Read any custom maps
-    platform_maps.init_env_maps()
+    init_env_maps()
 
 
 def cleanup(romm: RomM, exit_code: int):
