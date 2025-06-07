@@ -2,6 +2,8 @@ import os
 import sys
 import zipfile
 
+import platform_maps
+
 # Add dependencies to path
 base_path = os.path.dirname(os.path.abspath(__file__))
 libs_path = os.path.join(base_path, "deps")
@@ -47,6 +49,9 @@ if not apply_pending_update():
     log_file = os.environ.get("LOG_FILE", "./logs/log.txt")
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     sys.stdout = open(log_file, "w", buffering=1)
+
+    # Read any custom maps
+    platform_maps.init_env_maps()
 
 
 def cleanup(romm: RomM, exit_code: int):
