@@ -405,14 +405,10 @@ class RomM:
                         ),
                     ),
                 ]
-                is_in_device = os.path.exists(
-                    os.path.join(
-                        self.fs.get_sd_storage_platform_path(
-                            selected_rom.platform_slug
-                        ),
-                        selected_rom.fs_name,
-                    )
-                )
+                is_in_device = self.fs.is_rom_in_device(selected_rom)
+
+                # TODO: is_rom_in_device should return yes, no, different
+                # TODO: this check is broken when different
                 if is_in_device:
                     self.contextual_menu_options.append(
                         (
