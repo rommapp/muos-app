@@ -633,9 +633,12 @@ class API:
                 return
 
             filename = self._sanitize_filename(rom.fs_name).split(".")[0]
-            if rom.summary:
+            catalogue_path = self.file_system.get_catalogue_platform_path(
+                rom.platform_slug
+            )
+            if rom.summary and catalogue_path:
                 text_path = os.path.join(
-                    self.file_system.get_catalogue_platform_path(rom.platform_slug),
+                    catalogue_path,
                     "text",
                     f"{filename}.txt",
                 )
@@ -667,16 +670,15 @@ class API:
             if not self._download_assets:
                 continue
 
-            box_path = os.path.join(
-                self.file_system.get_catalogue_platform_path(rom.platform_slug),
-                "box",
-                f"{filename}.png",
+            # Check if the catalogue path is set and valid
+            catalogue_path = self.file_system.get_catalogue_platform_path(
+                rom.platform_slug
             )
-            preview_path = os.path.join(
-                self.file_system.get_catalogue_platform_path(rom.platform_slug),
-                "preview",
-                f"{filename}.png",
-            )
+            if not catalogue_path:
+                continue
+
+            box_path = os.path.join(catalogue_path, "box", f"{filename}.png")
+            preview_path = os.path.join(catalogue_path, "preview", f"{filename}.png")
 
             # Download cover and preview images
             os.makedirs(os.path.dirname(box_path), exist_ok=True)
