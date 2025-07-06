@@ -1,4 +1,5 @@
 import base64
+import datetime
 import json
 import math
 import os
@@ -11,6 +12,7 @@ from urllib.request import Request, urlopen
 
 import platform_maps
 from filesystem import Filesystem
+from imageutils import ImageUtils
 from models import Collection, Platform, Rom
 from PIL import Image
 from status import Status, View
@@ -28,6 +30,7 @@ class API:
     def __init__(self):
         self.status = Status()
         self.file_system = Filesystem()
+        self.image_utils = ImageUtils()
 
         self.host = os.getenv("HOST", "")
         self.username = os.getenv("USERNAME", "")
@@ -37,6 +40,11 @@ class API:
         self._include_collections = set(self._getenv_list("INCLUDE_COLLECTIONS"))
         self._exclude_collections = set(self._getenv_list("EXCLUDE_COLLECTIONS"))
         self._collection_type = os.getenv("COLLECTION_TYPE", "collection")
+        self._download_assets = os.getenv("DOWNLOAD_ASSETS", "false") in ("true", "1")
+        self._fullscreen_assets = os.getenv("FULLSCREEN_ASSETS", "false") in (
+            "true",
+            "1",
+        )
 
         if self.username and self.password:
             credentials = f"{self.username}:{self.password}"
@@ -234,6 +242,7 @@ class API:
             self.status.valid_host = False
             self.status.valid_credentials = False
             return
+
         platforms = json.loads(response.read().decode("utf-8"))
         _platforms: list[Platform] = []
 
@@ -251,7 +260,7 @@ class API:
 
         for platform in platforms:
             if platform["rom_count"] > 0:
-                platform_slug = platform["slug"].lower()
+                platform_slug: str = platform["slug"].lower()
                 if (
                     platform_maps._env_maps
                     and platform_slug in platform_maps._env_platforms
@@ -458,7 +467,7 @@ class API:
 
         _roms = []
         for rom in roms:
-            platform_slug = rom["platform_slug"].lower()
+            platform_slug: str = rom["platform_slug"].lower()
             if (
                 platform_maps._env_maps
                 and platform_slug in platform_maps._env_platforms
@@ -476,13 +485,17 @@ class API:
                 )
                 if mapped_folder.lower() not in roms_subfolders:
                     continue
+
             if view == View.PLATFORMS and platform_slug != selected_platform_slug:
                 continue
+
             _roms.append(
                 Rom(
                     id=rom["id"],
                     name=rom["name"],
+                    summary=rom["summary"],
                     fs_name=rom["fs_name"],
+                    platform_id=rom["platform_id"],
                     platform_slug=rom["platform_slug"],
                     fs_extension=rom["fs_extension"],
                     fs_size=self._human_readable_size(rom["fs_size_bytes"]),
@@ -492,6 +505,15 @@ class API:
                     regions=rom["regions"],
                     revision=rom["revision"],
                     tags=rom["tags"],
+                    path_cover_small=rom.get("path_cover_small", ""),
+                    path_cover_large=rom.get("path_cover_large", ""),
+                    merged_screenshots=rom["merged_screenshots"],
+                    first_release_date=rom["first_release_date"],
+                    average_rating=rom["average_rating"],
+                    genres=rom["genres"],
+                    franchises=rom["franchises"],
+                    companies=rom["companies"],
+                    age_ratings=rom["age_ratings"],
                 )
             )
 
@@ -532,6 +554,7 @@ class API:
             except ValueError:
                 self._reset_download_status()
                 return
+
             try:
                 if request.type not in ("http", "https"):
                     self._reset_download_status()
@@ -608,5 +631,65 @@ class API:
             except URLError:
                 self._reset_download_status(valid_host=True)
                 return
+
+            filename = self._sanitize_filename(rom.fs_name).split(".")[0]
+            if rom.summary:
+                text_path = os.path.join(
+                    self.file_system.get_catalogue_platform_path(rom.platform_slug),
+                    "text",
+                    f"{filename}.txt",
+                )
+                os.makedirs(os.path.dirname(text_path), exist_ok=True)
+                with open(text_path, "w") as f:
+                    f.write(rom.summary)
+                    f.write("\n\n")
+
+                    if rom.first_release_date:
+                        dt = datetime.datetime.fromtimestamp(
+                            rom.first_release_date / 1000
+                        )
+                        formatted_date = dt.strftime("%Y-%m-%d")
+                        f.write(f"First release date: {formatted_date}\n")
+
+                    if rom.average_rating:
+                        f.write(f"Average rating: {rom.average_rating}\n")
+
+                    if rom.genres:
+                        f.write(f"Genres: {', '.join(rom.genres)}\n")
+
+                    if rom.franchises:
+                        f.write(f"Franchises: {', '.join(rom.franchises)}\n")
+
+                    if rom.companies:
+                        f.write(f"Companies: {', '.join(rom.companies)}\n")
+
+            # Don't download covers and previews if the user disabled the option
+            if not self._download_assets:
+                continue
+
+            box_path = os.path.join(
+                self.file_system.get_catalogue_platform_path(rom.platform_slug),
+                "box",
+                f"{filename}.png",
+            )
+            preview_path = os.path.join(
+                self.file_system.get_catalogue_platform_path(rom.platform_slug),
+                "preview",
+                f"{filename}.png",
+            )
+
+            # Download cover and preview images
+            os.makedirs(os.path.dirname(box_path), exist_ok=True)
+            os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+
+            self.image_utils.process_assets(
+                fullscreen=self._fullscreen_assets,
+                cover_url=f"{self.host}{rom.path_cover_small}",
+                screenshot_url=f"{self.host}{rom.merged_screenshots[0]}",
+                box_path=box_path,
+                preview_path=preview_path,
+                headers=self.headers,
+            )
+
         # End of download
         self._reset_download_status(valid_host=True, valid_credentials=True)
