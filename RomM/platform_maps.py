@@ -55,7 +55,7 @@ MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "mega-duck-slash-cougar-boy": "Mega Duck",
     "msx": "Microsoft - MSX",
     "turbografx-cd": "NEC PC Engine CD",
-    "tg16": "NEC PC Engine"
+    "tg16": "NEC PC Engine",
     "supergrafx": "NEC PC Engine SuperGrafx",
     "pc-8000": "NEC PC-8000 - PC-8800 series",
     "pc-fx": "NEC PC-FX",
