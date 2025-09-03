@@ -5,7 +5,9 @@ Rom = namedtuple(
     [
         "id",
         "name",
+        "summary",
         "fs_name",
+        "platform_id",
         "platform_slug",
         "fs_extension",
         "fs_size",
@@ -15,6 +17,15 @@ Rom = namedtuple(
         "regions",
         "revision",
         "tags",
+        "path_cover_small",
+        "path_cover_large",
+        "merged_screenshots",
+        "first_release_date",
+        "average_rating",
+        "genres",
+        "franchises",
+        "companies",
+        "age_ratings",
     ],
 )
 Collection = namedtuple("Collection", ["id", "name", "rom_count", "virtual"])
