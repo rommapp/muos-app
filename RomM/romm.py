@@ -875,7 +875,7 @@ class RomM:
     def _remove_rom_files(self, rom: Rom):
         storage_path = self.fs.get_platforms_storage_path(rom.platform_slug)
 
-        if rom.multi:
+        if rom.has_multiple_files:
             # Read the m3u file to get the list of ROMs under the .hidden folder
             rom_list_path = os.path.join(storage_path, rom.fs_name + ".m3u")
             if os.path.isfile(rom_list_path):

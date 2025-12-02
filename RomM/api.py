@@ -492,28 +492,40 @@ class API:
             _roms.append(
                 Rom(
                     id=rom["id"],
-                    name=rom["name"],
-                    summary=rom["summary"],
-                    fs_name=rom["fs_name"],
                     platform_id=rom["platform_id"],
                     platform_slug=rom["platform_slug"],
+                    fs_name=rom["fs_name"],
+                    fs_name_no_tags=rom["fs_name_no_tags"],
+                    fs_name_no_ext=rom["fs_name_no_ext"],
                     fs_extension=rom["fs_extension"],
                     fs_size=self._human_readable_size(rom["fs_size_bytes"]),
                     fs_size_bytes=rom["fs_size_bytes"],
-                    multi=rom["multi"],
-                    languages=rom["languages"],
-                    regions=rom["regions"],
+                    name=rom["name"],
+                    slug=rom["slug"],
+                    summary=rom["summary"],
+                    youtube_video_id=rom["youtube_video_id"],
+                    path_cover_small=rom["path_cover_small"],
+                    path_cover_large=rom["path_cover_large"],
+                    is_identified=rom["is_identified"],
                     revision=rom["revision"],
+                    regions=rom["regions"],
+                    languages=rom["languages"],
                     tags=rom["tags"],
-                    path_cover_small=rom.get("path_cover_small", ""),
-                    path_cover_large=rom.get("path_cover_large", ""),
+                    crc_hash=rom["crc_hash"],
+                    md5_hash=rom["md5_hash"],
+                    sha1_hash=rom["sha1_hash"],
+                    has_simple_single_file=rom["has_simple_single_file"],
+                    has_nested_single_file=rom["has_nested_single_file"],
+                    has_multiple_files=rom["has_multiple_files"],
                     merged_screenshots=rom["merged_screenshots"],
-                    first_release_date=rom["first_release_date"],
-                    average_rating=rom["average_rating"],
-                    genres=rom["genres"],
-                    franchises=rom["franchises"],
-                    companies=rom["companies"],
-                    age_ratings=rom["age_ratings"],
+                    genres=rom["metadatum"]["genres"],
+                    franchises=rom["metadatum"]["franchises"],
+                    collections=rom["metadatum"]["collections"],
+                    companies=rom["metadatum"]["companies"],
+                    game_modes=rom["metadatum"]["game_modes"],
+                    age_ratings=rom["metadatum"]["age_ratings"],
+                    first_release_date=rom["metadatum"]["first_release_date"],
+                    average_rating=rom["metadatum"]["average_rating"],
                 )
             )
 
@@ -586,10 +598,11 @@ class API:
                             self._reset_download_status(True, True)
                             os.remove(dest_path)
                             return
+
                 # Handle multi-file (ZIP) ROMs
-                if rom.multi:
+                if rom.has_multiple_files:
                     self.status.extracting_rom = True
-                    print("Multi file rom detected. Extracting...")
+                    print("Multi-file rom detected. Extracting...")
                     with zipfile.ZipFile(dest_path, "r") as zip_ref:
                         total_size = sum(file.file_size for file in zip_ref.infolist())
                         extracted_size = 0

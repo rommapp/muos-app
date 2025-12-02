@@ -182,6 +182,6 @@ class Filesystem:
         """Check if a ROM exists in the storage path."""
         rom_path = os.path.join(
             self.get_platforms_storage_path(rom.platform_slug),
-            rom.fs_name if not rom.multi else f"{rom.fs_name}.m3u",
+            rom.fs_name if not rom.has_multiple_files else f"{rom.fs_name}.m3u",
         )
         return os.path.exists(rom_path)

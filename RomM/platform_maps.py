@@ -10,9 +10,9 @@ ES_FOLDER_MAP = {
     # "slug": ("es-system", "icon"),
     "ngc": ("gamecube", "ngc"),  # Nintendo GameCube
     "n3ds": ("3ds", "3ds"),  # Nintendo 3DS
-    "genesis": ("genesis", "genesis-slash-megadrive"),  # Sega Genesis / Megadrive
-    "megadrive": ("megadrive", "genesis-slash-megadrive"),  # Sega Genesis / Megadrive
-    "mastersystem": ("mastersystem", "sega-master-system"),  # Sega Mastersystem
+    "genesis": ("genesis", "genesis"),  # Sega Genesis / Megadrive
+    "megadrive": ("megadrive", "genesis"),  # Sega Genesis / Megadrive
+    "mastersystem": ("mastersystem", "sms"),  # Sega Mastersystem
 }
 
 # Manual mapping of RomM slugs for MuOS default platforms

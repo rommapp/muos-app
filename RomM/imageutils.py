@@ -52,7 +52,7 @@ class ImageUtils:
         from urllib.request import Request, urlopen
 
         try:
-            req = Request(url, headers=headers)
+            req = Request(url.split("?")[0], headers=headers)
             with urlopen(req, timeout=60) as response:  # trunk-ignore(bandit/B310)
                 data = response.read()
             return Image.open(BytesIO(data)).convert("RGBA")
