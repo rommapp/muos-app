@@ -12,7 +12,7 @@ from config import (
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, _typing
 from status import Status
 
 FONT_FILE = {
@@ -167,7 +167,7 @@ class UserInterface:
 
     def draw_rectangle(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         fill: str | None = None,
         outline: str | None = None,
         width: int = 1,
@@ -176,7 +176,7 @@ class UserInterface:
 
     def draw_rectangle_r(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         radius: float,
         fill: str | None = None,
         outline: str | None = None,
@@ -186,7 +186,7 @@ class UserInterface:
     def row_list(
         self,
         text: str,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         width: int,
         height: int,
         selected: bool = False,
@@ -206,8 +206,12 @@ class UserInterface:
         radius = 5
         margin_left_text = 12 + (35 if icon else 0)
         margin_top_text = 8
+
+        position_0: float = position[0]  # type: ignore
+        position_1: float = position[1]  # type: ignore
+
         self.draw_rectangle_r(
-            [position[0], position[1], position[0] + width, position[1] + height],
+            [position_0, position_1, position_0 + width, position_1 + height],
             radius,
             fill=fill if selected else color_row_bg,
             outline=outline,
@@ -218,12 +222,12 @@ class UserInterface:
             margin_top_icon = 5
             self.active_image.paste(
                 icon,
-                (position[0] + margin_left_icon, position[1] + margin_top_icon),
+                (int(position_0 + margin_left_icon), int(position_1 + margin_top_icon)),
                 mask=icon if icon.mode == "RGBA" else None,
             )
 
         self.draw_text(
-            (position[0] + margin_left_text, position[1] + margin_top_text),
+            (position_0 + margin_left_text, position_1 + margin_top_text),
             text,
             color=color,
             size=size,
@@ -231,17 +235,20 @@ class UserInterface:
 
     def draw_circle(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         radius: int,
         fill: str | None = None,
         outline: str | None = color_text,
     ):
+        position_0: float = position[0]  # type: ignore
+        position_1: float = position[1]  # type: ignore
+
         self.active_draw.ellipse(
             [
-                position[0] - radius,
-                position[1] - radius,
-                position[0] + radius,
-                position[1] + radius,
+                position_0 - radius,
+                position_1 - radius,
+                position_0 + radius,
+                position_1 + radius,
             ],
             fill=fill,
             outline=outline,
@@ -249,7 +256,7 @@ class UserInterface:
 
     def button_circle(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         button: str,
         text: str,
         color: Optional[str] = None,
@@ -260,14 +267,17 @@ class UserInterface:
         btn_text_offset = 1
         label_margin_l = 20
 
+        position_0: float = position[0]  # type: ignore
+        position_1: float = position[1]  # type: ignore
+
         self.draw_circle(position, radius, fill=color, outline=None)
         self.draw_text(
-            (position[0] + btn_text_offset, position[1] + btn_text_offset),
+            (position_0 + btn_text_offset, position_1 + btn_text_offset),
             button,
             anchor="mm",
         )
         self.draw_text(
-            (position[0] + label_margin_l, position[1] + btn_text_offset),
+            (position_0 + label_margin_l, position_1 + btn_text_offset),
             text,
             size="sm",
             anchor="lm",
@@ -578,21 +588,24 @@ class UserInterface:
 
     def draw_menu_background(
         self,
-        pos,
-        width,
-        n_options,
-        option_height,
-        gap,
-        padding,
-        extra_top_offset=0,
-        extra_bottom_offset=0,
+        pos: _typing.Coords,
+        width: int,
+        n_options: int,
+        option_height: int,
+        gap: int,
+        padding: int,
+        extra_top_offset: int = 0,
+        extra_bottom_offset: int = 0,
     ):
+        position_0: float = pos[0]  # type: ignore
+        position_1: float = pos[1]  # type: ignore
+
         self.draw_rectangle_r(
             [
-                pos[0],
-                pos[1] - extra_top_offset,
-                pos[0] + width + padding * 2,
-                pos[1]
+                position_0,
+                position_1 - extra_top_offset,
+                position_0 + width + padding * 2,
+                position_1
                 + n_options * (option_height + gap)
                 + padding * 2
                 - gap
