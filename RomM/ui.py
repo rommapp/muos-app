@@ -12,7 +12,7 @@ from config import (
 from filesystem import Filesystem
 from glyps import glyphs
 from models import Collection, Platform, Rom
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, _typing
 from status import Status
 
 FONT_FILE = {
@@ -167,7 +167,7 @@ class UserInterface:
 
     def draw_rectangle(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         fill: str | None = None,
         outline: str | None = None,
         width: int = 1,
@@ -176,7 +176,7 @@ class UserInterface:
 
     def draw_rectangle_r(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         radius: float,
         fill: str | None = None,
         outline: str | None = None,
@@ -186,7 +186,7 @@ class UserInterface:
     def row_list(
         self,
         text: str,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         width: int,
         height: int,
         selected: bool = False,
@@ -231,7 +231,7 @@ class UserInterface:
 
     def draw_circle(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         radius: int,
         fill: str | None = None,
         outline: str | None = color_text,
@@ -249,7 +249,7 @@ class UserInterface:
 
     def button_circle(
         self,
-        position: ImageDraw.Coords,
+        position: _typing.Coords,
         button: str,
         text: str,
         color: Optional[str] = None,
