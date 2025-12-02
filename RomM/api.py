@@ -489,6 +489,7 @@ class API:
             if view == View.PLATFORMS and platform_slug != selected_platform_slug:
                 continue
 
+            metadatum = rom.get("metadatum", {})
             _roms.append(
                 Rom(
                     id=rom["id"],
@@ -503,29 +504,29 @@ class API:
                     name=rom["name"],
                     slug=rom["slug"],
                     summary=rom["summary"],
-                    youtube_video_id=rom["youtube_video_id"],
+                    youtube_video_id=rom.get("youtube_video_id", None),
                     path_cover_small=rom["path_cover_small"],
                     path_cover_large=rom["path_cover_large"],
                     is_identified=rom["is_identified"],
-                    revision=rom["revision"],
-                    regions=rom["regions"],
-                    languages=rom["languages"],
-                    tags=rom["tags"],
-                    crc_hash=rom["crc_hash"],
-                    md5_hash=rom["md5_hash"],
-                    sha1_hash=rom["sha1_hash"],
-                    has_simple_single_file=rom["has_simple_single_file"],
-                    has_nested_single_file=rom["has_nested_single_file"],
-                    has_multiple_files=rom["has_multiple_files"],
-                    merged_screenshots=rom["merged_screenshots"],
-                    genres=rom["metadatum"]["genres"],
-                    franchises=rom["metadatum"]["franchises"],
-                    collections=rom["metadatum"]["collections"],
-                    companies=rom["metadatum"]["companies"],
-                    game_modes=rom["metadatum"]["game_modes"],
-                    age_ratings=rom["metadatum"]["age_ratings"],
-                    first_release_date=rom["metadatum"]["first_release_date"],
-                    average_rating=rom["metadatum"]["average_rating"],
+                    revision=rom.get("revision", None),
+                    regions=rom.get("regions", []),
+                    languages=rom.get("languages", []),
+                    tags=rom.get("tags", []),
+                    crc_hash=rom.get("crc_hash", ""),
+                    md5_hash=rom.get("md5_hash", ""),
+                    sha1_hash=rom.get("sha1_hash", ""),
+                    has_simple_single_file=rom.get("has_simple_single_file", False),
+                    has_nested_single_file=rom.get("has_nested_single_file", False),
+                    has_multiple_files=rom.get("has_multiple_files", False),
+                    merged_screenshots=rom.get("merged_screenshots", []),
+                    genres=metadatum.get("genres", []),
+                    franchises=metadatum.get("franchises", []),
+                    collections=metadatum.get("collections", []),
+                    companies=metadatum.get("companies", []),
+                    game_modes=metadatum.get("game_modes", []),
+                    age_ratings=metadatum.get("age_ratings", []),
+                    first_release_date=metadatum.get("first_release_date", None),
+                    average_rating=metadatum.get("average_rating", None),
                 )
             )
 
@@ -645,11 +646,15 @@ class API:
                 self._reset_download_status(valid_host=True)
                 return
 
-            filename = self._sanitize_filename(rom.fs_name).split(".")[0]
+            # Check if the catalogue path is set and valid
             catalogue_path = self.file_system.get_catalogue_platform_path(
                 rom.platform_slug
             )
-            if rom.summary and catalogue_path:
+            if not catalogue_path:
+                continue
+
+            filename = self._sanitize_filename(rom.fs_name_no_ext)
+            if rom.summary:
                 text_path = os.path.join(
                     catalogue_path,
                     "text",
@@ -683,13 +688,6 @@ class API:
             if not self._download_assets:
                 continue
 
-            # Check if the catalogue path is set and valid
-            catalogue_path = self.file_system.get_catalogue_platform_path(
-                rom.platform_slug
-            )
-            if not catalogue_path:
-                continue
-
             box_path = os.path.join(catalogue_path, "box", f"{filename}.png")
             preview_path = os.path.join(catalogue_path, "preview", f"{filename}.png")
 
@@ -699,8 +697,8 @@ class API:
 
             self.image_utils.process_assets(
                 fullscreen=self._fullscreen_assets,
-                cover_url=f"{self.host}{rom.path_cover_small}",
-                screenshot_url=f"{self.host}{rom.merged_screenshots[0]}",
+                cover_url=rom.path_cover_small,
+                screenshot_urls=rom.merged_screenshots,
                 box_path=box_path,
                 preview_path=preview_path,
                 headers=self.headers,

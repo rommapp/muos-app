@@ -75,14 +75,6 @@ class Filesystem:
         """Return the secondary ROMs storage path if available."""
         return self._sd2_roms_storage_path
 
-    def _get_sd1_catalogue_path(self) -> Optional[str]:
-        """Return the catalogue path for SD1."""
-        return self._sd1_catalogue_path
-
-    def _get_sd2_catalogue_path(self) -> Optional[str]:
-        """Return the catalogue path for SD2."""
-        return self._sd2_catalogue_path
-
     def _get_platform_storage_dir_from_mapping(self, platform: str) -> str:
         """
         Return the platform-specific storage path,
@@ -165,14 +157,8 @@ class Filesystem:
 
         return self._get_sd1_platforms_storage_path(platform)
 
-    def get_catalogue_path(self, platform: str) -> str | None:
-        """Return the catalogue path for a specific platform."""
-        if self._current_sd == 2:
-            return self._get_sd2_catalogue_path()
-
-        return self._get_sd1_catalogue_path()
-
     def get_catalogue_platform_path(self, platform: str) -> str:
+        """Return the catalogue path for a specific platform."""
         if self._current_sd == 2:
             return self.get_sd2_catalogue_platform_path(platform)
 

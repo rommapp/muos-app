@@ -1,4 +1,8 @@
+import os
+from io import BytesIO
 from typing import Optional
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from PIL import Image, ImageDraw
 
@@ -19,6 +23,7 @@ class ImageUtils:
         if self._initialized:
             return
 
+        self.host = os.getenv("HOST", "").strip("/")
         self.fade_mask = self.generate_fade_mask()
         self._initialized = True
 
@@ -38,7 +43,7 @@ class ImageUtils:
 
         return fade_mask
 
-    def add_rounded_corners(self, image, radius):
+    def add_rounded_corners(self, image: Image.Image, radius: int = 20):
         rounded_mask = Image.new("L", image.size, 0)
         draw = ImageDraw.Draw(rounded_mask)
         draw.rounded_rectangle(
@@ -47,36 +52,33 @@ class ImageUtils:
         image.putalpha(rounded_mask)
         return image
 
-    def load_image_from_url(self, url: str, headers) -> Image.Image | None:
-        from io import BytesIO
-        from urllib.request import Request, urlopen
-
+    def load_image_from_url(self, url: str, headers: dict) -> Image.Image | None:
         try:
             req = Request(url.split("?")[0], headers=headers)
             with urlopen(req, timeout=60) as response:  # trunk-ignore(bandit/B310)
                 data = response.read()
             return Image.open(BytesIO(data)).convert("RGBA")
-        except Exception as e:
+        except (URLError, HTTPError, IOError) as e:
             print(f"Error loading image from URL {url}: {e}")
             return None
 
     def process_assets(
         self,
         fullscreen: bool,
-        cover_url: str,
-        screenshot_url: str,
+        cover_url: str | None,
+        screenshot_urls: list[str],
         box_path: str,
         preview_path: str,
-        headers,
+        headers: dict,
     ) -> None:
-        if not cover_url and not screenshot_url:
+        if not cover_url and not screenshot_urls:
             return
 
         final_width, final_height = self.screen_width, self.screen_height
         background = None
         preview = (
-            self.load_image_from_url(screenshot_url, headers)
-            if screenshot_url
+            self.load_image_from_url(screenshot_urls[0], headers)
+            if len(screenshot_urls) > 0
             else None
         )
 
@@ -104,7 +106,7 @@ class ImageUtils:
             new_cover_width = int(foreground.width * scale)
             new_cover_height = int(foreground.height * scale)
             foreground = foreground.resize((new_cover_width, new_cover_height))
-            foreground = self.add_rounded_corners(foreground, radius=20)
+            foreground = self.add_rounded_corners(foreground)
 
             fg_x = final_width - new_cover_width - 20
             fg_y = (final_height - new_cover_height) // 2
