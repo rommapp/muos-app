@@ -32,7 +32,7 @@ class API:
         self.file_system = Filesystem()
         self.image_utils = ImageUtils()
 
-        self.host = os.getenv("HOST", "")
+        self.host = os.getenv("HOST", "").strip("/")
         self.username = os.getenv("USERNAME", "")
         self.password = os.getenv("PASSWORD", "")
         self.headers = {}

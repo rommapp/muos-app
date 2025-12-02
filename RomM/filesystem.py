@@ -51,7 +51,10 @@ class Filesystem:
         if self._sd2_roms_storage_path and not os.path.exists(
             self._sd2_roms_storage_path
         ):
-            os.mkdir(self._sd2_roms_storage_path)
+            try:
+                os.mkdir(self._sd2_roms_storage_path)
+            except FileNotFoundError:
+                print("Cannot create SD2 storage path", self._sd2_roms_storage_path)
 
         # Set the default SD card based on the existence of the storage path
         self._current_sd = int(
