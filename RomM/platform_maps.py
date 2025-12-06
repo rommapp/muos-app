@@ -202,46 +202,35 @@ def _load_json_maps() -> dict:
     Load platform mappings from platform_maps.json in project root.
     Falls back to hardcoded constants if JSON file is missing or invalid.
     """
+    # Define fallback maps once for reuse
+    fallback_maps = {
+        "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
+        "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
+        "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
+    }
+
     # Calculate path: Go up from RomM/ to project root
     json_path = Path(__file__).parent.parent / "platform_maps.json"
 
     if not json_path.exists():
         print(f"Warning: {json_path} not found, using hardcoded defaults")
-        return {
-            "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
-            "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
-            "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
-        }
+        return fallback_maps
 
     try:
         with open(json_path, "r", encoding="utf-8") as f:
             loaded = json.load(f)
 
-        # Validate required keys exist
-        if "es_folder_map" not in loaded:
-            loaded["es_folder_map"] = _FALLBACK_ES_FOLDER_MAP
-        if "muos" not in loaded:
-            loaded["muos"] = _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP
-        if "spruceos" not in loaded:
-            loaded["spruceos"] = _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP
+        # Validate required keys exist, falling back for each if missing
+        for key, default_value in fallback_maps.items():
+            if key not in loaded:
+                loaded[key] = default_value
 
         return loaded
 
-    except json.JSONDecodeError as e:
-        print(f"Error: platform_maps.json has invalid JSON: {e}")
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error loading or parsing platform_maps.json: {e}")
         print("Falling back to hardcoded defaults")
-        return {
-            "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
-            "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
-            "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
-        }
-    except Exception as e:
-        print(f"Error loading platform_maps.json: {e}")
-        return {
-            "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
-            "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
-            "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
-        }
+        return fallback_maps
 
 
 def _convert_json_arrays_to_tuples(es_map: dict) -> dict:
@@ -275,21 +264,16 @@ def _load_env_maps() -> dict[str, str]:
 # MODULE-LEVEL STATE
 # ============================================================================
 
-_json_maps = None
 _env_maps = None
 _env_platforms = None
 
 
 def init_env_maps():
     """
-    Initialize all platform maps: JSON file + CUSTOM_MAPS env var overrides.
+    Initialize custom map overrides from the CUSTOM_MAPS environment variable.
     This function is called from main.py on startup.
     """
-    global _json_maps, _env_maps, _env_platforms
-
-    # Load from JSON file if not already loaded
-    if _json_maps is None:
-        _json_maps = _load_json_maps()
+    global _env_maps, _env_platforms
 
     # Load env var overrides (highest priority)
     if _env_maps is None:
