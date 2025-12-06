@@ -1,12 +1,17 @@
 import json
 import os
+from pathlib import Path
 
 # Manual mapping of RomM slugs to device folder names and platform icons for es systems
 # This is sometimes needed to match custom system folders with defaults, for example ES-DE uses roms/gc and some Batocera forks use roms/gamecube
 # https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/unix/es_systems.xml
 
-# EmulationStation custom folder map
-ES_FOLDER_MAP = {
+# ============================================================================
+# FALLBACK CONSTANTS (used if JSON file is missing or invalid)
+# ============================================================================
+
+# EmulationStation custom folder map (fallback)
+_FALLBACK_ES_FOLDER_MAP = {
     # "slug": ("es-system", "icon"),
     "ngc": ("gamecube", "ngc"),  # Nintendo GameCube
     "n3ds": ("3ds", "3ds"),  # Nintendo 3DS
@@ -15,8 +20,8 @@ ES_FOLDER_MAP = {
     "mastersystem": ("mastersystem", "sms"),  # Sega Mastersystem
 }
 
-# Manual mapping of RomM slugs for MuOS default platforms
-MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
+# Manual mapping of RomM slugs for MuOS default platforms (fallback)
+_FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "acpc": "Amstrad",
     "arcade": "Arcade",
     "arduboy": "Arduboy",
@@ -111,10 +116,8 @@ MUOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "wolfenstein-3d": "Wolfenstein 3D",
 }
 
-MUOS_SUPPORTED_PLATFORMS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
-MUOS_SUPPORTED_PLATFORMS_FS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.values())
-
-SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP = {
+# Manual mapping of RomM slugs for SpruceOS default platforms (fallback)
+_FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "amiga": "AMIGA",
     "acpc": "CPC",
     "arcade": "ARCADE",
@@ -189,17 +192,71 @@ SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP = {
     "wolf3d": "WOLF",
 }
 
-# Manual mapping of RomM slugs for SpruceOS default platforms
-SPRUCEOS_SUPPORTED_PLATFORMS = frozenset(SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
-SPRUCEOS_SUPPORTED_PLATFORMS_FS = frozenset(
-    SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.values()
-)
+# ============================================================================
+# JSON LOADING FUNCTIONS
+# ============================================================================
 
-_env_maps = None
-_env_platforms = None
+
+def _load_json_maps() -> dict:
+    """
+    Load platform mappings from platform_maps.json in project root.
+    Falls back to hardcoded constants if JSON file is missing or invalid.
+    """
+    # Calculate path: Go up from RomM/ to project root
+    json_path = Path(__file__).parent.parent / "platform_maps.json"
+
+    if not json_path.exists():
+        print(f"Warning: {json_path} not found, using hardcoded defaults")
+        return {
+            "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
+            "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
+            "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
+        }
+
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+
+        # Validate required keys exist
+        if "es_folder_map" not in loaded:
+            loaded["es_folder_map"] = _FALLBACK_ES_FOLDER_MAP
+        if "muos" not in loaded:
+            loaded["muos"] = _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP
+        if "spruceos" not in loaded:
+            loaded["spruceos"] = _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP
+
+        return loaded
+
+    except json.JSONDecodeError as e:
+        print(f"Error: platform_maps.json has invalid JSON: {e}")
+        print("Falling back to hardcoded defaults")
+        return {
+            "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
+            "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
+            "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
+        }
+    except Exception as e:
+        print(f"Error loading platform_maps.json: {e}")
+        return {
+            "es_folder_map": _FALLBACK_ES_FOLDER_MAP,
+            "muos": _FALLBACK_MUOS_SUPPORTED_PLATFORMS_FS_MAP,
+            "spruceos": _FALLBACK_SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP,
+        }
+
+
+def _convert_json_arrays_to_tuples(es_map: dict) -> dict:
+    """
+    Convert JSON arrays like ["folder", "icon"] to Python tuples.
+    This is needed for ES_FOLDER_MAP which uses tuple format.
+    """
+    return {k: tuple(v) if isinstance(v, list) else v for k, v in es_map.items()}
 
 
 def _load_env_maps() -> dict[str, str]:
+    """
+    Load custom maps from CUSTOM_MAPS environment variable.
+    Returns empty dict if not set or invalid JSON.
+    """
     raw = os.getenv("CUSTOM_MAPS")
     if not raw:
         return {}
@@ -214,10 +271,52 @@ def _load_env_maps() -> dict[str, str]:
         return {}
 
 
+# ============================================================================
+# MODULE-LEVEL STATE
+# ============================================================================
+
+_json_maps = None
+_env_maps = None
+_env_platforms = None
+
+
 def init_env_maps():
-    global _env_maps
-    global _env_platforms
+    """
+    Initialize all platform maps: JSON file + CUSTOM_MAPS env var overrides.
+    This function is called from main.py on startup.
+    """
+    global _json_maps, _env_maps, _env_platforms
+
+    # Load from JSON file if not already loaded
+    if _json_maps is None:
+        _json_maps = _load_json_maps()
+
+    # Load env var overrides (highest priority)
     if _env_maps is None:
         _env_maps = _load_env_maps()
+
     if _env_platforms is None:
         _env_platforms = frozenset(_env_maps.keys())
+
+
+# ============================================================================
+# MODULE-LEVEL EXPORTS (Backward Compatibility)
+# ============================================================================
+
+# Lazy initialization on first import
+_temp_maps = _load_json_maps()
+
+# Convert JSON arrays to tuples for ES_FOLDER_MAP
+ES_FOLDER_MAP = _convert_json_arrays_to_tuples(_temp_maps.get("es_folder_map", {}))
+
+# Load platform maps directly from JSON
+MUOS_SUPPORTED_PLATFORMS_FS_MAP = _temp_maps.get("muos", {})
+SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP = _temp_maps.get("spruceos", {})
+
+# Create frozensets for efficient platform lookups
+MUOS_SUPPORTED_PLATFORMS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
+MUOS_SUPPORTED_PLATFORMS_FS = frozenset(MUOS_SUPPORTED_PLATFORMS_FS_MAP.values())
+SPRUCEOS_SUPPORTED_PLATFORMS = frozenset(SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.keys())
+SPRUCEOS_SUPPORTED_PLATFORMS_FS = frozenset(
+    SPRUCEOS_SUPPORTED_PLATFORMS_FS_MAP.values()
+)

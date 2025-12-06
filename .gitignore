@@ -6,4 +6,7 @@ __pycache__/
 .dist
 .test
 
+# Optional: Uncomment to ignore user-specific platform map edits
+# platform_maps.json
+
 trunk.ps1
