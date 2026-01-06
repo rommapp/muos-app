@@ -41,7 +41,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            .dist/RomM\ muOS\ ${{ env.version }}.muxapp
-            .dist/RomM\ PortMaster\ ${{ env.version }}.zip
+            .dist/RomM.muOS.${{ env.version }}.muxapp
+            .dist/RomM.PortMaster.${{ env.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

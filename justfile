@@ -67,13 +67,13 @@ cleanup:
 muxapp:
 	mkdir -p .dist
 	cd .build && zip -r "../RomM muOS {{ version }}.muxapp" ./RomM
-	mv "RomM muOS {{ version }}.muxapp" .dist/"RomM muOS {{ version }}.muxapp"
+	mv "RomM muOS {{ version }}.muxapp" .dist/"RomM.muOS.{{ version }}.muxapp"
 
 portmaster:
 	mkdir -p .dist
 	cp "RomM App.sh" ./.build
 	cd .build && zip -r "../RomM PortMaster {{ version }}.zip" .
-	mv "RomM PortMaster {{ version }}.zip" .dist/"RomM PortMaster {{ version }}.zip"
+	mv "RomM PortMaster {{ version }}.zip" .dist/"RomM.PortMaster.{{ version }}.zip"
 
 connect:
 	@echo "Uploading files..."
