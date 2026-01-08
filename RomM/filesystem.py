@@ -33,23 +33,36 @@ class Filesystem:
         if not os.path.exists(self.resources_path):
             os.makedirs(self.resources_path, exist_ok=True)
 
+        sd1_root_path = None
+        sd2_root_path = None
+
         # ROMs storage path
         if self.is_muos:
-            self._sd1_roms_storage_path = "/mnt/mmc/ROMS"
-            self._sd2_roms_storage_path = "/mnt/sdcard/ROMS"
-            self._sd1_catalogue_path = "/mnt/mmc/MUOS/info/catalogue"
-            self._sd2_catalogue_path = "/mnt/sdcard/MUOS/info/catalogue"
+            sd1_root_path = "/mnt/mmc"
+            sd2_root_path = "/mnt/sdcard"
+            self._sd1_roms_storage_path = os.path.join(sd1_root_path, "ROMS")
+            self._sd2_roms_storage_path = os.path.join(sd2_root_path, "ROMS")
+            self._sd1_catalogue_path = os.path.join(
+                sd1_root_path, "MUOS/info/catalogue"
+            )
+            self._sd2_catalogue_path = os.path.join(
+                sd2_root_path, "MUOS/info/catalogue"
+            )
         elif self.is_spruceos:
-            self._sd1_roms_storage_path = "/mnt/SDCARD/Roms"
+            sd1_root_path = "/mnt/SDCARD"
+            self._sd1_roms_storage_path = os.path.join(sd1_root_path, "Roms")
         else:
             # Go up two levels from the script's directory (e.g., from roms/ports/romm to roms/)
             base_path = os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
             # Default to the ROMs directory, overridable via environment variable
             self._sd1_roms_storage_path = os.environ.get("ROMS_STORAGE_PATH", base_path)
 
-        # Ensure the ROMs storage path exists
-        if self._sd2_roms_storage_path and not os.path.exists(
+        # Ensure the ROMs storage path exists on SD2 if SD2 is present
+        if (
             self._sd2_roms_storage_path
+            and sd2_root_path
+            and os.path.exists(sd2_root_path)
+            and not os.path.exists(self._sd2_roms_storage_path)
         ):
             try:
                 os.mkdir(self._sd2_roms_storage_path)
