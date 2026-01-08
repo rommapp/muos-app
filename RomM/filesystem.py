@@ -56,6 +56,10 @@ class Filesystem:
             base_path = os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
             # Default to the ROMs directory, overridable via environment variable
             self._sd1_roms_storage_path = os.environ.get("ROMS_STORAGE_PATH", base_path)
+            # For non-MuOS/non-SpruceOS devices, use catalogue from environment or create one in the app directory
+            self._sd1_catalogue_path = os.environ.get(
+                "CATALOGUE_PATH", os.path.join(os.getcwd(), "catalogue")
+            )
 
         # Ensure the ROMs storage path exists on SD2 if SD2 is present
         if (
@@ -68,6 +72,17 @@ class Filesystem:
                 os.mkdir(self._sd2_roms_storage_path)
             except FileNotFoundError:
                 print("Cannot create SD2 storage path", self._sd2_roms_storage_path)
+
+        # Ensure the catalogue path exists
+        if self._sd1_catalogue_path and not os.path.exists(self._sd1_catalogue_path):
+            try:
+                os.makedirs(self._sd1_catalogue_path, exist_ok=True)
+                print(f"Created catalogue directory: {self._sd1_catalogue_path}")
+            except OSError as e:
+                print(
+                    f"Cannot create catalogue directory {self._sd1_catalogue_path}: {e}"
+                )
+                self._sd1_catalogue_path = None
 
         # Set the default SD card based on the existence of the storage path
         self._current_sd = int(
