@@ -1,3 +1,8 @@
+> [!WARNING]
+> **This muOS app is being sunset.**
+>
+> Future development efforts will focus on [Grout][grout], a multi-device client for muOS, Knulli, NextUI, and Spruce. No further releases are planned, and new or existing issues will not be fixed. Special thanks to @JeodC for their work on the PortMaster version, and a huge thank you to everyone who contributed to its success. ❤️
+
 <!-- trunk-ignore-all(markdownlint/MD033) -->
 <!-- trunk-ignore(markdownlint/MD041) -->
 <div align="center">
@@ -67,3 +72,4 @@ Consider supporting the development of this project on Open Collective.
 [discord-invite-url]: https://discord.gg/P5HtHnhUDH
 [oc-donate-img]: https://opencollective.com/romm/donate/button.png?color=blue
 [oc-donate]: https://opencollective.com/romm
+[grout]: https://github.com/rommapp/grout
