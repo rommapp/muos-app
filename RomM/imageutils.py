@@ -2,6 +2,7 @@ import os
 from io import BytesIO
 from typing import Optional
 from urllib.error import HTTPError, URLError
+from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 from PIL import Image, ImageDraw
@@ -54,6 +55,10 @@ class ImageUtils:
 
     def load_image_from_url(self, url: str, headers: dict) -> Image.Image | None:
         try:
+            # Use urljoin to properly resolve relative URLs against the host
+            if url:
+                url = urljoin(f"{self.host}/", url)
+
             req = Request(url.split("?")[0], headers=headers)
             with urlopen(req, timeout=60) as response:  # trunk-ignore(bandit/B310)
                 data = response.read()
