@@ -54,6 +54,10 @@ class ImageUtils:
 
     def load_image_from_url(self, url: str, headers: dict) -> Image.Image | None:
         try:
+            # If URL is relative (doesn't start with http:// or https://), prepend host
+            if url and not url.startswith(("http://", "https://")):
+                url = f"{self.host}{url}"
+            
             req = Request(url.split("?")[0], headers=headers)
             with urlopen(req, timeout=60) as response:  # trunk-ignore(bandit/B310)
                 data = response.read()

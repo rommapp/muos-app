@@ -652,6 +652,7 @@ class API:
             )
             if not catalogue_path:
                 continue
+            os.makedirs(catalogue_path, exist_ok=True)
 
             filename = self._sanitize_filename(rom.fs_name_no_ext)
             if rom.summary:
